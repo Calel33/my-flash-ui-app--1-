@@ -1,0 +1,745 @@
+
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+*/
+
+//Vibe coded by ammaar@google.com
+
+import { GoogleGenAI } from '@google/genai';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom/client';
+
+import { Artifact, Session, ComponentVariation, LayoutOption, LibraryItem } from './types';
+import { INITIAL_PLACEHOLDERS } from './constants';
+import { generateId } from './utils';
+
+// Available Gemini models
+const AVAILABLE_MODELS = [
+    { id: 'gemini-3-flash-preview', name: 'Flash (Faster)', description: 'Higher rate limits, good for components' },
+    { id: 'gemini-3-pro-preview', name: 'Pro (Smarter)', description: 'Lower rate limits, better for complex systems' },
+] as const;
+
+type ModelId = typeof AVAILABLE_MODELS[number]['id'];
+
+import DottedGlowBackground from './components/DottedGlowBackground';
+import ArtifactCard from './components/ArtifactCard';
+import SideDrawer from './components/SideDrawer';
+import {
+    ThinkingIcon,
+    CodeIcon,
+    SparklesIcon,
+    ArrowLeftIcon,
+    ArrowRightIcon,
+    ArrowUpIcon,
+    GridIcon,
+    ReactIcon,
+    CopyIcon,
+    SelectorIcon,
+    DownloadIcon,
+    BrainIcon,
+    PaletteIcon,
+    LibraryIcon,
+    SaveIcon,
+    TrashIcon
+} from './components/Icons';
+
+function App() {
+    const [sessions, setSessions] = useState<Session[]>([]);
+    const [currentSessionIndex, setCurrentSessionIndex] = useState<number>(-1);
+    const [focusedArtifactIndex, setFocusedArtifactIndex] = useState<number | null>(null);
+    const [storedItems, setStoredItems] = useState<LibraryItem[]>([]);
+    const [activeSystem, setActiveSystem] = useState<LibraryItem | null>(null);
+    const [concurrentGenerations, setConcurrentGenerations] = useState<number>(() => {
+        const saved = localStorage.getItem('flash_ui_concurrent_generations');
+        return saved ? Math.min(5, Math.max(1, parseInt(saved, 10))) : 3;
+    });
+    const [componentModel, setComponentModel] = useState<ModelId>(() => {
+        const saved = localStorage.getItem('flash_ui_component_model');
+        return (saved as ModelId) || 'gemini-3-flash-preview';
+    });
+    const [designSystemModel, setDesignSystemModel] = useState<ModelId>(() => {
+        const saved = localStorage.getItem('flash_ui_design_system_model');
+        return (saved as ModelId) || 'gemini-3-pro-preview';
+    });
+
+    const [inputValue, setInputValue] = useState<string>('');
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [isReactLoading, setIsReactLoading] = useState<boolean>(false);
+    const [placeholderIndex, setPlaceholderIndex] = useState(0);
+    const [placeholders, setPlaceholders] = useState<string[]>(INITIAL_PLACEHOLDERS);
+
+    const [isSelectorMode, setIsSelectorMode] = useState<boolean>(false);
+    const [isDesignSystemMode, setIsDesignSystemMode] = useState<boolean>(false);
+    const [snippetTab, setSnippetTab] = useState<'html' | 'react'>('html');
+    const [copyFeedback, setCopyFeedback] = useState<boolean>(false);
+
+    const [drawerState, setDrawerState] = useState<{
+        isOpen: boolean;
+        mode: 'code' | 'variations' | 'react' | 'snippet' | 'agent-prompt' | 'library' | null;
+        title: string;
+        data: string;
+        reactData?: string;
+    }>({ isOpen: false, mode: null, title: '', data: '' });
+
+    const [componentVariations, setComponentVariations] = useState<ComponentVariation[]>([]);
+
+    const inputRef = useRef<HTMLInputElement>(null);
+    const gridScrollRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('flash_ui_creative_library');
+        if (saved) {
+            try { setStoredItems(JSON.parse(saved)); } catch (e) { console.error(e); }
+        }
+    }, []);
+
+    useEffect(() => {
+        localStorage.setItem('flash_ui_creative_library', JSON.stringify(storedItems));
+    }, [storedItems]);
+
+    useEffect(() => {
+        localStorage.setItem('flash_ui_concurrent_generations', concurrentGenerations.toString());
+    }, [concurrentGenerations]);
+
+    useEffect(() => {
+        localStorage.setItem('flash_ui_component_model', componentModel);
+    }, [componentModel]);
+
+    useEffect(() => {
+        localStorage.setItem('flash_ui_design_system_model', designSystemModel);
+    }, [designSystemModel]);
+
+    useEffect(() => {
+        inputRef.current?.focus();
+    }, []);
+
+    useEffect(() => {
+        const handleIframeMessage = async (event: MessageEvent) => {
+            if (event.data?.type === 'ELEMENT_SELECTED') {
+                const { outerHTML, styleContext } = event.data;
+                handleExtractSnippet(outerHTML, styleContext);
+            }
+        };
+        window.addEventListener('message', handleIframeMessage);
+        return () => window.removeEventListener('message', handleIframeMessage);
+    }, [focusedArtifactIndex, currentSessionIndex, sessions]);
+
+    const handleExtractSnippet = useCallback(async (snippetHtml: string, context: string) => {
+        const currentSession = sessions[currentSessionIndex];
+        if (!currentSession || focusedArtifactIndex === null) return;
+        const currentArtifact = currentSession.artifacts[focusedArtifactIndex];
+
+        setIsLoading(true);
+        setIsSelectorMode(false);
+        setSnippetTab('html');
+        setDrawerState({ isOpen: true, mode: 'snippet', title: 'Isolated Component', data: '', reactData: '' });
+
+        try {
+            const apiKey = process.env.API_KEY;
+            if (!apiKey) throw new Error("API_KEY is not configured.");
+            const ai = new GoogleGenAI({ apiKey });
+
+            const prompt = `
+I have a full HTML/CSS document and I've selected a specific element from it. 
+Your task is to extract this element and ALL its required CSS/JS into a clean, standalone HTML file.
+
+**SELECTED ELEMENT:**
+${snippetHtml}
+
+**ORIGINAL DOCUMENT CONTEXT:**
+${currentArtifact.html}
+
+**REQUIREMENTS:**
+1. Return a single, valid HTML file containing the selected HTML and necessary <style> tags.
+2. Use a modern, clean approach.
+3. Return ONLY the code. No markdown.
+        `.trim();
+
+            const responseStream = await ai.models.generateContentStream({
+                model: 'gemini-3-flash-preview',
+                contents: [{ parts: [{ text: prompt }], role: 'user' }],
+                config: { thinkingConfig: { thinkingBudget: 4000 } }
+            });
+
+            let accumulated = '';
+            for await (const chunk of responseStream) {
+                const text = chunk.text;
+                if (typeof text === 'string') {
+                    accumulated += text;
+                    const clean = accumulated.replace(/^```[a-z]*\n/i, '').replace(/\n```$/, '');
+                    setDrawerState(prev => ({ ...prev, data: clean }));
+                }
+            }
+        } catch (e: any) {
+            setDrawerState(prev => ({ ...prev, data: `Error: ${e.message}` }));
+        } finally {
+            setIsLoading(false);
+        }
+    }, [sessions, currentSessionIndex, focusedArtifactIndex]);
+
+    const handlePortSnippetToReact = useCallback(async () => {
+        if (drawerState.reactData || isReactLoading) return;
+
+        setIsReactLoading(true);
+        try {
+            const apiKey = process.env.API_KEY;
+            if (!apiKey) throw new Error("API_KEY is not configured.");
+            const ai = new GoogleGenAI({ apiKey });
+
+            const prompt = `
+Convert the following isolated HTML/CSS snippet into a clean, production-ready React functional component.
+1. Use functional structure.
+2. Include ALL necessary styles within a scoped <style> tag.
+3. Name the component 'Component'.
+4. Return ONLY the React code. No markdown.
+
+Snippet:
+${drawerState.data}
+        `.trim();
+
+            const responseStream = await ai.models.generateContentStream({
+                model: 'gemini-3-pro-preview',
+                contents: [{ parts: [{ text: prompt }], role: 'user' }],
+                config: { thinkingConfig: { thinkingBudget: 6000 } }
+            });
+
+            let accumulated = '';
+            for await (const chunk of responseStream) {
+                const text = chunk.text;
+                if (typeof text === 'string') {
+                    accumulated += text;
+                    const clean = accumulated.replace(/^```[a-z]*\n/i, '').replace(/\n```$/, '');
+                    setDrawerState(prev => ({ ...prev, reactData: clean }));
+                }
+            }
+        } catch (e: any) {
+            setDrawerState(prev => ({ ...prev, reactData: `// Error: ${e.message}` }));
+        } finally {
+            setIsReactLoading(false);
+        }
+    }, [drawerState.data, drawerState.reactData, isReactLoading]);
+
+    useEffect(() => {
+        if (snippetTab === 'react' && drawerState.mode === 'snippet' && !drawerState.reactData) {
+            handlePortSnippetToReact();
+        }
+    }, [snippetTab, drawerState.mode, drawerState.reactData, handlePortSnippetToReact]);
+
+    const handleGenerateVariations = useCallback(async () => {
+        const currentSession = sessions[currentSessionIndex];
+        if (!currentSession || focusedArtifactIndex === null) return;
+        const currentArtifact = currentSession.artifacts[focusedArtifactIndex];
+
+        setIsLoading(true);
+        setComponentVariations([]);
+        setDrawerState({ isOpen: true, mode: 'variations', title: 'Variations', data: currentArtifact.id });
+
+        try {
+            const apiKey = process.env.API_KEY;
+            if (!apiKey) throw new Error("API_KEY is not configured.");
+            const ai = new GoogleGenAI({ apiKey });
+
+            const prompt = `
+Generate 3 RADICAL CONCEPTUAL VARIATIONS of: "${currentSession.prompt}".
+Required JSON Format: { "name": "Name", "html": "..." }
+        `.trim();
+
+            const responseStream = await ai.models.generateContentStream({
+                model: 'gemini-3-flash-preview',
+                contents: [{ parts: [{ text: prompt }], role: 'user' }],
+                config: { temperature: 1.2 }
+            });
+
+            let buffer = '';
+            for await (const chunk of responseStream) {
+                const text = chunk.text;
+                if (typeof text !== 'string') continue;
+                buffer += text;
+                let braceCount = 0;
+                let start = buffer.indexOf('{');
+                while (start !== -1) {
+                    braceCount = 0;
+                    let end = -1;
+                    for (let i = start; i < buffer.length; i++) {
+                        if (buffer[i] === '{') braceCount++;
+                        else if (buffer[i] === '}') braceCount--;
+                        if (braceCount === 0 && i > start) {
+                            end = i;
+                            break;
+                        }
+                    }
+                    if (end !== -1) {
+                        const jsonString = buffer.substring(start, end + 1);
+                        try {
+                            const variation = JSON.parse(jsonString);
+                            if (variation.name && variation.html) {
+                                setComponentVariations(prev => [...prev, variation]);
+                            }
+                            buffer = buffer.substring(end + 1);
+                            start = buffer.indexOf('{');
+                        } catch (e) {
+                            start = buffer.indexOf('{', start + 1);
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    }, [sessions, currentSessionIndex, focusedArtifactIndex]);
+
+    const handlePortToReact = useCallback(async () => {
+        const currentSession = sessions[currentSessionIndex];
+        if (!currentSession || focusedArtifactIndex === null) return;
+        const currentArtifact = currentSession.artifacts[focusedArtifactIndex];
+
+        setIsLoading(true);
+        setDrawerState({ isOpen: true, mode: 'react', title: 'React Component', data: '' });
+
+        try {
+            const apiKey = process.env.API_KEY;
+            const ai = new GoogleGenAI({ apiKey });
+            const prompt = `Convert the following high-fidelity HTML/CSS component into a production-ready React component. Return ONLY the code. No markdown.\n\nHTML:\n${currentArtifact.html}`;
+
+            const responseStream = await ai.models.generateContentStream({
+                model: 'gemini-3-pro-preview',
+                contents: [{ parts: [{ text: prompt }], role: 'user' }],
+                config: { thinkingConfig: { thinkingBudget: 8000 } }
+            });
+
+            let accumulated = '';
+            for await (const chunk of responseStream) {
+                const text = chunk.text;
+                if (typeof text === 'string') {
+                    accumulated += text;
+                    const clean = accumulated.replace(/^```[a-z]*\n/i, '').replace(/\n```$/, '');
+                    setDrawerState(prev => ({ ...prev, data: clean }));
+                }
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    }, [sessions, currentSessionIndex, focusedArtifactIndex]);
+
+    const handleDownload = useCallback((content: string) => {
+        if (!content) return;
+        const isReact = drawerState.mode === 'react' || (drawerState.mode === 'snippet' && snippetTab === 'react');
+        const isPrompt = drawerState.mode === 'agent-prompt';
+        const ext = isReact ? '.tsx' : isPrompt ? '.txt' : '.html';
+        const filename = `flash-ui-export${ext}`;
+
+        const blob = new Blob([content], { type: isReact ? 'text/typescript' : 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, [drawerState.mode, snippetTab]);
+
+    const copyToClipboard = useCallback(async (text: string) => {
+        if (!text) return;
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+            } else {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-9999px";
+                textArea.style.top = "0";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+            }
+            setCopyFeedback(true);
+            setTimeout(() => setCopyFeedback(false), 2000);
+        } catch (err) {
+            console.error('Failed to copy: ', err);
+        }
+    }, []);
+
+    const applyVariation = (html: string) => {
+        if (focusedArtifactIndex === null) return;
+        setSessions(prev => prev.map((sess, i) =>
+            i === currentSessionIndex ? {
+                ...sess,
+                artifacts: sess.artifacts.map((art, j) =>
+                    j === focusedArtifactIndex ? { ...art, html, status: 'complete' } : art
+                )
+            } : sess
+        ));
+        setDrawerState(s => ({ ...s, isOpen: false }));
+    };
+
+    const handleShowCode = () => {
+        const currentSession = sessions[currentSessionIndex];
+        if (currentSession && focusedArtifactIndex !== null) {
+            const artifact = currentSession.artifacts[focusedArtifactIndex];
+            setDrawerState({ isOpen: true, mode: 'code', title: 'Source Code', data: artifact.html });
+        }
+    };
+
+    const handleShowAgentPrompt = () => {
+        const currentSession = sessions[currentSessionIndex];
+        if (currentSession && focusedArtifactIndex !== null) {
+            const artifact = currentSession.artifacts[focusedArtifactIndex];
+            setDrawerState({
+                isOpen: true,
+                mode: 'agent-prompt',
+                title: 'Agent Logic',
+                data: artifact.agentPrompt || 'Instruction metadata not available.'
+            });
+        }
+    };
+
+    const handleSaveToLibrary = () => {
+        const currentSession = sessions[currentSessionIndex];
+        if (currentSession && focusedArtifactIndex !== null) {
+            const artifact = currentSession.artifacts[focusedArtifactIndex];
+            const newItem: LibraryItem = {
+                id: generateId(),
+                name: artifact.styleName || 'Untitled Item',
+                prompt: currentSession.prompt,
+                html: artifact.html,
+                type: artifact.isDesignSystem ? 'design-system' : 'component',
+                timestamp: Date.now()
+            };
+            setStoredItems(prev => [newItem, ...prev]);
+            alert(`Saved ${newItem.type === 'design-system' ? 'Design System' : 'Component'} to Library!`);
+        }
+    };
+
+    const handleShowLibrary = () => {
+        setDrawerState({
+            isOpen: true,
+            mode: 'library',
+            title: 'Creative Library',
+            data: ''
+        });
+    };
+
+    const toggleSystemContext = (item: LibraryItem, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (activeSystem?.id === item.id) {
+            setActiveSystem(null);
+        } else {
+            setActiveSystem(item);
+            alert(`Active Context: ${item.name}. New components will follow this brand.`);
+            setDrawerState(s => ({ ...s, isOpen: false }));
+        }
+    };
+
+    const deleteFromLibrary = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setStoredItems(prev => prev.filter(s => s.id !== id));
+        if (activeSystem?.id === id) setActiveSystem(null);
+    };
+
+    const loadFromLibrary = (item: LibraryItem) => {
+        const sessionId = generateId();
+        const artifact: Artifact = {
+            id: `${sessionId}_0`,
+            styleName: item.name,
+            html: item.html,
+            status: 'complete',
+            isDesignSystem: item.type === 'design-system'
+        };
+
+        const newSession: Session = {
+            id: sessionId,
+            prompt: item.prompt,
+            timestamp: Date.now(),
+            artifacts: item.type === 'design-system'
+                ? [artifact, { ...artifact, id: `${sessionId}_1`, styleName: 'Ref A' }, { ...artifact, id: `${sessionId}_2`, styleName: 'Ref B' }]
+                : [artifact]
+        };
+
+        setSessions(prev => [...prev, newSession]);
+        setCurrentSessionIndex(sessions.length);
+        setFocusedArtifactIndex(0);
+        setDrawerState(s => ({ ...s, isOpen: false }));
+    };
+
+    // Add handleInputChange to resolve the missing name error
+    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        setInputValue(e.target.value);
+    }, []);
+
+    const handleSendMessage = useCallback(async (manualPrompt?: string) => {
+        const promptToUse = manualPrompt || inputValue;
+        const trimmedInput = promptToUse.trim();
+        if (!trimmedInput || isLoading) return;
+        if (!manualPrompt) setInputValue('');
+
+        setIsLoading(true);
+        const sessionId = generateId();
+        const placeholderArtifacts: Artifact[] = Array(concurrentGenerations).fill(null).map((_, i) => ({
+            id: `${sessionId}_${i}`,
+            styleName: 'Designing...',
+            html: '',
+            status: 'streaming',
+            isDesignSystem: isDesignSystemMode
+        }));
+
+        const newSession: Session = {
+            id: sessionId,
+            prompt: trimmedInput,
+            timestamp: Date.now(),
+            artifacts: placeholderArtifacts
+        };
+
+        setSessions(prev => [...prev, newSession]);
+        setCurrentSessionIndex(sessions.length);
+        setFocusedArtifactIndex(null);
+
+        try {
+            const apiKey = process.env.API_KEY;
+            const ai = new GoogleGenAI({ apiKey });
+
+            const systemInstructions = isDesignSystemMode
+                ? `You are a Lead Design Systems Architect. Create a FULL DESIGN SYSTEM style guide and component library for: "${trimmedInput}".`
+                : activeSystem
+                    ? `You are a frontend developer. Create a UI component for: "${trimmedInput}". 
+                   CRITICAL: You MUST adhere to the following Design System tokens and CSS variables to ensure brand consistency:
+                   ${activeSystem.html.match(/<style[^>]*>([\s\S]*?)<\/style>/i)?.[1] || "No style context found. Use professional standards."}
+                   Ensure the component looks like it belongs to this brand and uses the provided variables (colors, spacing, typography).`
+                    : `Create a stunning high-fidelity UI component for: "${trimmedInput}".`;
+
+            const stylePrompt = isDesignSystemMode
+                ? `Generate 3 distinct Brand Personalities for: "${trimmedInput}". Return ONLY a raw JSON array of 3 names.`
+                : `Generate 3 distinct design directions for: "${trimmedInput}". Return ONLY a raw JSON array of 3 names.`;
+
+            const styleResponse = await ai.models.generateContent({
+                model: 'gemini-3-flash-preview',
+                contents: { role: 'user', parts: [{ text: stylePrompt }] }
+            });
+
+            let generatedStyles = ["Style A", "Style B", "Style C"];
+            try {
+                const match = styleResponse.text?.match(/\[[\s\S]*\]/);
+                if (match) generatedStyles = JSON.parse(match[0]);
+            } catch { }
+
+            setSessions(prev => prev.map(s => s.id === sessionId ? {
+                ...s, artifacts: s.artifacts.map((art, i) => ({ ...art, styleName: generatedStyles[i] || `Direction ${i + 1}` }))
+            } : s));
+
+            const generateArtifact = async (artifact: Artifact, style: string) => {
+                const finalPrompt = systemInstructions + `\n\nDirection: ${style}. Return RAW HTML only.`;
+
+                setSessions(prev => prev.map(sess => sess.id === sessionId ? {
+                    ...sess, artifacts: sess.artifacts.map(art => art.id === artifact.id ? { ...art, agentPrompt: finalPrompt } : art)
+                } : sess));
+
+                const responseStream = await ai.models.generateContentStream({
+                    model: isDesignSystemMode ? designSystemModel : componentModel,
+                    contents: [{ parts: [{ text: finalPrompt }], role: "user" }],
+                    config: isDesignSystemMode ? { thinkingConfig: { thinkingBudget: 8000 } } : undefined
+                });
+
+                let accumulated = '';
+                for await (const chunk of responseStream) {
+                    accumulated += chunk.text || '';
+                    setSessions(prev => prev.map(sess => sess.id === sessionId ? {
+                        ...sess, artifacts: sess.artifacts.map(art => art.id === artifact.id ? { ...art, html: accumulated } : art)
+                    } : sess));
+                }
+                const final = accumulated.replace(/^```html\n/i, '').replace(/^```\n/i, '').replace(/\n```$/, '').trim();
+                setSessions(prev => prev.map(sess => sess.id === sessionId ? {
+                    ...sess, artifacts: sess.artifacts.map(art => art.id === artifact.id ? { ...art, html: final, status: 'complete' } : art)
+                } : sess));
+            };
+
+            await Promise.all(placeholderArtifacts.map((art, i) => generateArtifact(art, generatedStyles[i])));
+        } finally {
+            setIsLoading(false);
+        }
+    }, [inputValue, isLoading, sessions.length, isDesignSystemMode, activeSystem]);
+
+    const handleSurpriseMe = () => {
+        const p = placeholders[placeholderIndex];
+        setInputValue(p);
+        handleSendMessage(p);
+    };
+
+    const nextItem = () => {
+        const sess = sessions[currentSessionIndex];
+        if (focusedArtifactIndex !== null && sess && focusedArtifactIndex < sess.artifacts.length - 1) setFocusedArtifactIndex(focusedArtifactIndex + 1);
+        else if (currentSessionIndex < sessions.length - 1) { setCurrentSessionIndex(currentSessionIndex + 1); setFocusedArtifactIndex(null); }
+    };
+
+    const prevItem = () => {
+        if (focusedArtifactIndex !== null && focusedArtifactIndex > 0) setFocusedArtifactIndex(focusedArtifactIndex - 1);
+        else if (currentSessionIndex > 0) { setCurrentSessionIndex(currentSessionIndex - 1); setFocusedArtifactIndex(null); }
+    };
+
+    const hasStarted = sessions.length > 0 || isLoading;
+    const currentSession = sessions[currentSessionIndex];
+    const canGoBack = (focusedArtifactIndex !== null && focusedArtifactIndex > 0) || currentSessionIndex > 0;
+    const canGoForward = (focusedArtifactIndex !== null && currentSession && focusedArtifactIndex < currentSession.artifacts.length - 1) || currentSessionIndex < sessions.length - 1;
+
+    const currentSnippetData = drawerState.mode === 'snippet' && snippetTab === 'react' ? (drawerState.reactData || '') : (drawerState.data || '');
+
+    return (
+        <>
+            <SideDrawer isOpen={drawerState.isOpen} onClose={() => setDrawerState(s => ({ ...s, isOpen: false }))} title={drawerState.title}>
+                {(isLoading || (isReactLoading && snippetTab === 'react')) && !currentSnippetData && (
+                    <div className="loading-state"><ThinkingIcon /> {isReactLoading ? 'Converting...' : 'Extracting...'}</div>
+                )}
+                {drawerState.mode === 'snippet' && (
+                    <div className="snippet-tabs">
+                        <button className={`tab-btn ${snippetTab === 'html' ? 'active' : ''}`} onClick={() => setSnippetTab('html')}><CodeIcon /> HTML</button>
+                        <button className={`tab-btn ${snippetTab === 'react' ? 'active' : ''}`} onClick={() => setSnippetTab('react')}><ReactIcon /> React</button>
+                    </div>
+                )}
+                {(drawerState.mode === 'code' || drawerState.mode === 'react' || drawerState.mode === 'snippet' || drawerState.mode === 'agent-prompt') && (
+                    <div className="code-container">
+                        <div className="drawer-actions">
+                            <button className="copy-code-button" onClick={() => copyToClipboard(currentSnippetData)}><CopyIcon /> {copyFeedback ? 'Copied!' : 'Copy'}</button>
+                            {drawerState.mode !== 'agent-prompt' && <button className="copy-code-button" onClick={() => handleDownload(currentSnippetData)}><DownloadIcon /> Download</button>}
+                        </div>
+                        {isReactLoading && snippetTab === 'react' && !drawerState.reactData ? <div className="loading-shimmer-code" /> : <pre className="code-block"><code>{currentSnippetData}</code></pre>}
+                    </div>
+                )}
+                {drawerState.mode === 'variations' && (
+                    <div className="sexy-grid">
+                        {componentVariations.map((v, i) => (
+                            <div key={i} className="sexy-card" onClick={() => applyVariation(v.html)}>
+                                <div className="sexy-preview"><iframe srcDoc={v.html} title={v.name} sandbox="allow-scripts allow-same-origin" /></div>
+                                <div className="sexy-label">{v.name}</div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                {drawerState.mode === 'library' && (
+                    <div className="library-list">
+                        {storedItems.length === 0 ? <div className="empty-library">Your library is empty.</div> : (
+                            storedItems.map(item => (
+                                <div key={item.id} className="library-item" onClick={() => loadFromLibrary(item)}>
+                                    <div className="library-item-info">
+                                        <div className="library-item-header">
+                                            <div className="library-item-name">{item.name}</div>
+                                            <span className={`item-type-badge ${item.type}`}>{item.type === 'design-system' ? 'DS' : 'CMP'}</span>
+                                        </div>
+                                        <div className="library-item-prompt">{item.prompt}</div>
+                                    </div>
+                                    <div className="library-item-actions">
+                                        {item.type === 'design-system' && (
+                                            <button
+                                                className={`context-btn ${activeSystem?.id === item.id ? 'active' : ''}`}
+                                                title={activeSystem?.id === item.id ? "System Active" : "Activate System Context"}
+                                                onClick={(e) => toggleSystemContext(item, e)}
+                                            >
+                                                <PaletteIcon />
+                                            </button>
+                                        )}
+                                        <button className="delete-item-btn" onClick={(e) => deleteFromLibrary(item.id, e)}><TrashIcon /></button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )}
+            </SideDrawer>
+
+            <div className="immersive-app">
+                <DottedGlowBackground gap={24} radius={1.5} color="rgba(255, 255, 255, 0.02)" glowColor="rgba(255, 255, 255, 0.15)" speedScale={0.5} />
+                <div className={`stage-container ${focusedArtifactIndex !== null ? 'mode-focus' : 'mode-split'}`}>
+                    <div className={`empty-state ${hasStarted ? 'fade-out' : ''}`}>
+                        <div className="empty-content">
+                            <h1>Flash UI</h1>
+                            <p>Creative UI generation in a flash</p>
+                            <div className="empty-actions">
+                                <button className={`mode-toggle ${isDesignSystemMode ? 'active' : ''}`} onClick={() => setIsDesignSystemMode(!isDesignSystemMode)}><PaletteIcon /> {isDesignSystemMode ? 'Design System Mode' : 'Component Mode'}</button>
+                                <button className="surprise-button" onClick={handleSurpriseMe} disabled={isLoading}><SparklesIcon /> Surprise Me</button>
+                            </div>
+                        </div>
+                    </div>
+                    {sessions.map((session, sIndex) => (
+                        <div key={session.id} className={`session-group ${sIndex === currentSessionIndex ? 'active-session' : sIndex < currentSessionIndex ? 'past-session' : 'future-session'}`}>
+                            <div className="artifact-grid" ref={sIndex === currentSessionIndex ? gridScrollRef : null}>
+                                {session.artifacts.map((artifact, aIndex) => (
+                                    <ArtifactCard key={artifact.id} artifact={artifact} isFocused={focusedArtifactIndex === aIndex} isSelectorMode={isSelectorMode && focusedArtifactIndex === aIndex} onClick={() => setFocusedArtifactIndex(aIndex)} />
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                {canGoBack && <button className="nav-handle left" onClick={prevItem}><ArrowLeftIcon /></button>}
+                {canGoForward && <button className="nav-handle right" onClick={nextItem}><ArrowRightIcon /></button>}
+                <div className={`action-bar ${focusedArtifactIndex !== null ? 'visible' : ''}`}>
+                    <div className="active-prompt-label">{currentSession?.prompt}</div>
+                    <div className="action-buttons">
+                        <button onClick={() => { setFocusedArtifactIndex(null); setIsSelectorMode(false); }}><GridIcon /> Grid View</button>
+                        <button onClick={() => setIsSelectorMode(!isSelectorMode)} className={isSelectorMode ? 'active-btn' : ''}><SelectorIcon /> {isSelectorMode ? 'Cancel Selection' : 'Select Element'}</button>
+                        <button onClick={handleGenerateVariations} disabled={isLoading}><SparklesIcon /> Variations</button>
+                        <button onClick={handlePortToReact} disabled={isLoading}><ReactIcon /> Port to React</button>
+                        <button onClick={handleSaveToLibrary} title="Archive to Library"><SaveIcon /> Store</button>
+                        <button onClick={handleShowAgentPrompt}><BrainIcon /> Agent Logic</button>
+                        <button onClick={handleShowCode}><CodeIcon /> HTML/CSS</button>
+                    </div>
+                    {isSelectorMode && <div className="selector-tip">Click any element in the preview to extract it.</div>}
+                </div>
+                <div className="floating-input-container">
+                    {activeSystem && (
+                        <div className="active-context-badge" onClick={() => setActiveSystem(null)}>
+                            🎯 Brand: <strong>{activeSystem.name}</strong> <span className="clear-ctx">&times;</span>
+                        </div>
+                    )}
+                    <div className={`input-wrapper ${isLoading ? 'loading' : ''} ${isDesignSystemMode ? 'design-system-active' : ''}`}>
+                        <button className={`mini-mode-toggle ${isDesignSystemMode ? 'active' : ''}`} title="Design System Mode" onClick={() => setIsDesignSystemMode(!isDesignSystemMode)}><PaletteIcon /></button>
+                        <button className="mini-mode-toggle" title="My Creative Library" onClick={handleShowLibrary}><LibraryIcon /></button>
+                        <div className="generation-count-control" title="Number of concurrent generations">
+                            <input
+                                type="range"
+                                min="1"
+                                max="5"
+                                value={concurrentGenerations}
+                                onChange={(e) => setConcurrentGenerations(parseInt(e.target.value, 10))}
+                                className="generation-slider"
+                                disabled={isLoading}
+                            />
+                            <span className="generation-count-label">{concurrentGenerations}</span>
+                        </div>
+                        <div className="model-select-control" title={`Model for ${isDesignSystemMode ? 'Design System' : 'Component'} mode`}>
+                            <select
+                                value={isDesignSystemMode ? designSystemModel : componentModel}
+                                onChange={(e) => {
+                                    const value = e.target.value as ModelId;
+                                    if (isDesignSystemMode) {
+                                        setDesignSystemModel(value);
+                                    } else {
+                                        setComponentModel(value);
+                                    }
+                                }}
+                                className="model-select"
+                                disabled={isLoading}
+                            >
+                                {AVAILABLE_MODELS.map(model => (
+                                    <option key={model.id} value={model.id}>{model.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        {!isLoading ? (
+                            <input ref={inputRef} type="text" value={inputValue} placeholder={isDesignSystemMode ? "Describe brand architecture..." : "Describe a UI component..."} onChange={handleInputChange} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} />
+                        ) : (
+                            <div className="input-generating-label"><span className="generating-prompt-text">{currentSession?.prompt}</span><ThinkingIcon /></div>
+                        )}
+                        <button className="send-button" onClick={() => handleSendMessage()} disabled={isLoading || !inputValue.trim()}><ArrowUpIcon /></button>
+                    </div>
+                </div>
+            </div>
+        </>
+    );
+}
+
+const rootElement = document.getElementById('root');
+if (rootElement) ReactDOM.createRoot(rootElement).render(<React.StrictMode><App /></React.StrictMode>);
