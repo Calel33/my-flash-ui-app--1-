@@ -14,11 +14,11 @@ interface ArtifactCardProps {
     onClick: () => void;
 }
 
-const ArtifactCard = React.memo(({ 
-    artifact, 
-    isFocused, 
+const ArtifactCard = React.memo(({
+    artifact,
+    isFocused,
     isSelectorMode,
-    onClick 
+    onClick
 }: ArtifactCardProps) => {
     const codeRef = useRef<HTMLPreElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -50,6 +50,62 @@ const ArtifactCard = React.memo(({
                     overlay.style.transition = 'all 0.1s ease';
                     document.body.appendChild(overlay);
 
+                    function getElementPath(el) {
+                        const path = [];
+                        while (el && el !== document.body) {
+                            const parent = el.parentElement;
+                            if (parent) {
+                                const siblings = Array.from(parent.children);
+                                path.unshift(siblings.indexOf(el));
+                            }
+                            el = parent;
+                        }
+                        return path;
+                    }
+
+                    function getElementData(el) {
+                        const computed = getComputedStyle(el);
+                        return {
+                            tagName: el.tagName,
+                            id: el.id || '',
+                            className: el.className || '',
+                            textContent: el.childNodes.length === 1 && el.childNodes[0].nodeType === 3 ? el.textContent?.trim() : '',
+                            href: el.getAttribute('href') || '',
+                            computedStyles: {
+                                marginTop: computed.marginTop,
+                                marginRight: computed.marginRight,
+                                marginBottom: computed.marginBottom,
+                                marginLeft: computed.marginLeft,
+                                paddingTop: computed.paddingTop,
+                                paddingRight: computed.paddingRight,
+                                paddingBottom: computed.paddingBottom,
+                                paddingLeft: computed.paddingLeft,
+                                backgroundColor: computed.backgroundColor,
+                                color: computed.color,
+                                fontSize: computed.fontSize,
+                                fontFamily: computed.fontFamily,
+                                fontWeight: computed.fontWeight,
+                                lineHeight: computed.lineHeight,
+                                letterSpacing: computed.letterSpacing,
+                                textAlign: computed.textAlign,
+                                borderRadius: computed.borderRadius,
+                                borderWidth: computed.borderWidth,
+                                borderColor: computed.borderColor,
+                                width: computed.width,
+                                height: computed.height,
+                                display: computed.display,
+                                position: computed.position,
+                                gap: computed.gap,
+                                justifyContent: computed.justifyContent,
+                                alignItems: computed.alignItems,
+                                boxShadow: computed.boxShadow,
+                                opacity: computed.opacity,
+                                transform: computed.transform
+                            },
+                            path: getElementPath(el)
+                        };
+                    }
+
                     document.addEventListener('mousemove', (e) => {
                         const el = document.elementFromPoint(e.clientX, e.clientY);
                         if (el && el !== document.body && el !== document.documentElement && el !== overlay) {
@@ -71,11 +127,33 @@ const ArtifactCard = React.memo(({
                         if (lastEl) {
                             window.parent.postMessage({
                                 type: 'ELEMENT_SELECTED',
+                                elementData: getElementData(lastEl),
                                 outerHTML: lastEl.outerHTML,
                                 styleContext: document.querySelector('style')?.innerText || ''
                             }, '*');
                         }
                     }, true);
+
+                    // Listen for style updates from parent
+                    window.addEventListener('message', (e) => {
+                        if (e.data?.type === 'APPLY_STYLE') {
+                            const { path, styles, textContent, href } = e.data;
+                            let el = document.body;
+                            for (const idx of path) {
+                                el = el.children[idx];
+                                if (!el) return;
+                            }
+                            if (styles) {
+                                Object.assign(el.style, styles);
+                            }
+                            if (textContent !== undefined && el.childNodes.length === 1 && el.childNodes[0].nodeType === 3) {
+                                el.textContent = textContent;
+                            }
+                            if (href !== undefined && el.tagName === 'A') {
+                                el.setAttribute('href', href);
+                            }
+                        }
+                    });
 
                     const style = document.createElement('style');
                     style.innerHTML = '* { cursor: crosshair !important; }';
@@ -87,7 +165,7 @@ const ArtifactCard = React.memo(({
     }, [artifact.html, isSelectorMode]);
 
     return (
-        <div 
+        <div
             className={`artifact-card ${isFocused ? 'focused' : ''} ${isBlurring ? 'generating' : ''} ${isSelectorMode ? 'selector-active' : ''}`}
             onClick={isSelectorMode ? undefined : onClick}
         >
@@ -102,10 +180,10 @@ const ArtifactCard = React.memo(({
                         </pre>
                     </div>
                 )}
-                <iframe 
+                <iframe
                     ref={iframeRef}
-                    srcDoc={processedHtml} 
-                    title={artifact.id} 
+                    srcDoc={processedHtml}
+                    title={artifact.id}
                     sandbox="allow-scripts allow-forms allow-modals allow-popups allow-presentation allow-same-origin"
                     className="artifact-iframe"
                 />

@@ -25,6 +25,7 @@ type ModelId = typeof AVAILABLE_MODELS[number]['id'];
 import DottedGlowBackground from './components/DottedGlowBackground';
 import ArtifactCard from './components/ArtifactCard';
 import SideDrawer from './components/SideDrawer';
+import ElementEditor, { ElementData } from './components/ElementEditor';
 import {
     ThinkingIcon,
     CodeIcon,
@@ -69,7 +70,7 @@ function App() {
     const [placeholderIndex, setPlaceholderIndex] = useState(0);
     const [placeholders, setPlaceholders] = useState<string[]>(INITIAL_PLACEHOLDERS);
 
-    const [isSelectorMode, setIsSelectorMode] = useState<boolean>(false);
+    const [selectorMode, setSelectorMode] = useState<'edit' | 'extract' | false>(false);
     const [isDesignSystemMode, setIsDesignSystemMode] = useState<boolean>(false);
     const [snippetTab, setSnippetTab] = useState<'html' | 'react'>('html');
     const [copyFeedback, setCopyFeedback] = useState<boolean>(false);
@@ -83,6 +84,10 @@ function App() {
     }>({ isOpen: false, mode: null, title: '', data: '' });
 
     const [componentVariations, setComponentVariations] = useState<ComponentVariation[]>([]);
+
+    // Element Editor state
+    const [editingElement, setEditingElement] = useState<ElementData | null>(null);
+    const [isElementEditorOpen, setIsElementEditorOpen] = useState(false);
 
     const inputRef = useRef<HTMLInputElement>(null);
     const gridScrollRef = useRef<HTMLDivElement>(null);
@@ -117,13 +122,22 @@ function App() {
     useEffect(() => {
         const handleIframeMessage = async (event: MessageEvent) => {
             if (event.data?.type === 'ELEMENT_SELECTED') {
-                const { outerHTML, styleContext } = event.data;
-                handleExtractSnippet(outerHTML, styleContext);
+                const { elementData, outerHTML, styleContext } = event.data;
+
+                // Check which mode we're in
+                if (selectorMode === 'edit' && elementData) {
+                    // Edit mode - open the Element Editor
+                    setEditingElement(elementData);
+                    setIsElementEditorOpen(true);
+                } else if (selectorMode === 'extract') {
+                    // Extract mode - extract as isolated snippet
+                    handleExtractSnippet(outerHTML, styleContext);
+                }
             }
         };
         window.addEventListener('message', handleIframeMessage);
         return () => window.removeEventListener('message', handleIframeMessage);
-    }, [focusedArtifactIndex, currentSessionIndex, sessions]);
+    }, [focusedArtifactIndex, currentSessionIndex, sessions, selectorMode]);
 
     const handleExtractSnippet = useCallback(async (snippetHtml: string, context: string) => {
         const currentSession = sessions[currentSessionIndex];
@@ -131,7 +145,7 @@ function App() {
         const currentArtifact = currentSession.artifacts[focusedArtifactIndex];
 
         setIsLoading(true);
-        setIsSelectorMode(false);
+        setSelectorMode(false);
         setSnippetTab('html');
         setDrawerState({ isOpen: true, mode: 'snippet', title: 'Isolated Component', data: '', reactData: '' });
 
@@ -199,7 +213,7 @@ ${drawerState.data}
         `.trim();
 
             const responseStream = await ai.models.generateContentStream({
-                model: 'gemini-3-pro-preview',
+                model: componentModel,
                 contents: [{ parts: [{ text: prompt }], role: 'user' }],
                 config: { thinkingConfig: { thinkingBudget: 6000 } }
             });
@@ -305,7 +319,7 @@ Required JSON Format: { "name": "Name", "html": "..." }
             const prompt = `Convert the following high-fidelity HTML/CSS component into a production-ready React component. Return ONLY the code. No markdown.\n\nHTML:\n${currentArtifact.html}`;
 
             const responseStream = await ai.models.generateContentStream({
-                model: 'gemini-3-pro-preview',
+                model: componentModel,
                 contents: [{ parts: [{ text: prompt }], role: 'user' }],
                 config: { thinkingConfig: { thinkingBudget: 8000 } }
             });
@@ -468,6 +482,60 @@ Required JSON Format: { "name": "Name", "html": "..." }
         setDrawerState(s => ({ ...s, isOpen: false }));
     };
 
+    // Apply changes from the element editor to the iframe
+    const applyElementChanges = useCallback((changes: Partial<ElementData['computedStyles']> & { textContent?: string; href?: string }) => {
+        if (!editingElement) return;
+
+        // Get the focused artifact's iframe
+        const iframes = document.querySelectorAll('.artifact-card.focused iframe');
+        if (iframes.length === 0) return;
+
+        const iframe = iframes[0] as HTMLIFrameElement;
+        if (!iframe.contentWindow) return;
+
+        // Separate text/href from styles
+        const { textContent, href, ...styles } = changes;
+
+        // Send message to iframe to apply the change
+        iframe.contentWindow.postMessage({
+            type: 'APPLY_STYLE',
+            path: editingElement.path,
+            styles: Object.keys(styles).length > 0 ? styles : undefined,
+            textContent,
+            href
+        }, '*');
+    }, [editingElement]);
+
+    // Save element edits by extracting updated HTML from iframe
+    const saveElementEdits = useCallback(() => {
+        if (focusedArtifactIndex === null || !currentSessionIndex) return;
+
+        // Get the focused artifact's iframe
+        const iframes = document.querySelectorAll('.artifact-card.focused iframe');
+        if (iframes.length === 0) return;
+
+        const iframe = iframes[0] as HTMLIFrameElement;
+        if (!iframe.contentDocument) return;
+
+        // Extract the full HTML from the iframe
+        const updatedHtml = iframe.contentDocument.documentElement.outerHTML;
+
+        // Update the artifact HTML in state
+        setSessions(prev => prev.map((sess, sIdx) =>
+            sIdx === currentSessionIndex ? {
+                ...sess,
+                artifacts: sess.artifacts.map((art, aIdx) =>
+                    aIdx === focusedArtifactIndex ? { ...art, html: updatedHtml } : art
+                )
+            } : sess
+        ));
+
+        // Exit selector mode after saving
+        setSelectorMode(false);
+        setIsElementEditorOpen(false);
+        setEditingElement(null);
+    }, [focusedArtifactIndex, currentSessionIndex]);
+
     // Add handleInputChange to resolve the missing name error
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         setInputValue(e.target.value);
@@ -590,9 +658,26 @@ Required JSON Format: { "name": "Name", "html": "..." }
 
     return (
         <>
+            <ElementEditor
+                element={editingElement}
+                isOpen={isElementEditorOpen}
+                onClose={() => {
+                    setIsElementEditorOpen(false);
+                    setEditingElement(null);
+                }}
+                onApplyChanges={applyElementChanges}
+                onSave={saveElementEdits}
+            />
             <SideDrawer isOpen={drawerState.isOpen} onClose={() => setDrawerState(s => ({ ...s, isOpen: false }))} title={drawerState.title}>
-                {(isLoading || (isReactLoading && snippetTab === 'react')) && !currentSnippetData && (
-                    <div className="loading-state"><ThinkingIcon /> {isReactLoading ? 'Converting...' : 'Extracting...'}</div>
+                {((isLoading && drawerState.mode === 'react' && !drawerState.data) || (isReactLoading && snippetTab === 'react' && !drawerState.reactData) || (isLoading && drawerState.mode === 'snippet' && !drawerState.data)) && (
+                    <div className="react-loading-state">
+                        <div className="react-loading-icon"><ReactIcon /></div>
+                        <div className="react-loading-text">
+                            <span className="loading-title">{drawerState.mode === 'react' ? 'Converting to React...' : isReactLoading ? 'Converting...' : 'Extracting...'}</span>
+                            <span className="loading-subtitle">Generating production-ready code</span>
+                        </div>
+                        <div className="loading-shimmer-bar" />
+                    </div>
                 )}
                 {drawerState.mode === 'snippet' && (
                     <div className="snippet-tabs">
@@ -606,7 +691,18 @@ Required JSON Format: { "name": "Name", "html": "..." }
                             <button className="copy-code-button" onClick={() => copyToClipboard(currentSnippetData)}><CopyIcon /> {copyFeedback ? 'Copied!' : 'Copy'}</button>
                             {drawerState.mode !== 'agent-prompt' && <button className="copy-code-button" onClick={() => handleDownload(currentSnippetData)}><DownloadIcon /> Download</button>}
                         </div>
-                        {isReactLoading && snippetTab === 'react' && !drawerState.reactData ? <div className="loading-shimmer-code" /> : <pre className="code-block"><code>{currentSnippetData}</code></pre>}
+                        {(isLoading && drawerState.mode === 'react' && !drawerState.data) || (isReactLoading && snippetTab === 'react' && !drawerState.reactData) ? (
+                            <div className="code-skeleton">
+                                {[...Array(12)].map((_, i) => (
+                                    <div key={i} className="skeleton-line" style={{ width: `${40 + Math.random() * 55}%`, animationDelay: `${i * 0.05}s` }} />
+                                ))}
+                            </div>
+                        ) : (
+                            <pre className={`code-block ${(isLoading || isReactLoading) && currentSnippetData ? 'streaming' : ''}`}>
+                                <code>{currentSnippetData}</code>
+                                {(isLoading || isReactLoading) && currentSnippetData && <span className="streaming-cursor" />}
+                            </pre>
+                        )}
                     </div>
                 )}
                 {drawerState.mode === 'variations' && (
@@ -667,7 +763,7 @@ Required JSON Format: { "name": "Name", "html": "..." }
                         <div key={session.id} className={`session-group ${sIndex === currentSessionIndex ? 'active-session' : sIndex < currentSessionIndex ? 'past-session' : 'future-session'}`}>
                             <div className="artifact-grid" ref={sIndex === currentSessionIndex ? gridScrollRef : null}>
                                 {session.artifacts.map((artifact, aIndex) => (
-                                    <ArtifactCard key={artifact.id} artifact={artifact} isFocused={focusedArtifactIndex === aIndex} isSelectorMode={isSelectorMode && focusedArtifactIndex === aIndex} onClick={() => setFocusedArtifactIndex(aIndex)} />
+                                    <ArtifactCard key={artifact.id} artifact={artifact} isFocused={focusedArtifactIndex === aIndex} isSelectorMode={!!selectorMode && focusedArtifactIndex === aIndex} onClick={() => setFocusedArtifactIndex(aIndex)} />
                                 ))}
                             </div>
                         </div>
@@ -678,15 +774,16 @@ Required JSON Format: { "name": "Name", "html": "..." }
                 <div className={`action-bar ${focusedArtifactIndex !== null ? 'visible' : ''}`}>
                     <div className="active-prompt-label">{currentSession?.prompt}</div>
                     <div className="action-buttons">
-                        <button onClick={() => { setFocusedArtifactIndex(null); setIsSelectorMode(false); }}><GridIcon /> Grid View</button>
-                        <button onClick={() => setIsSelectorMode(!isSelectorMode)} className={isSelectorMode ? 'active-btn' : ''}><SelectorIcon /> {isSelectorMode ? 'Cancel Selection' : 'Select Element'}</button>
+                        <button onClick={() => { setFocusedArtifactIndex(null); setSelectorMode(false); }}><GridIcon /> Grid View</button>
+                        <button onClick={() => setSelectorMode(selectorMode === 'edit' ? false : 'edit')} className={selectorMode === 'edit' ? 'active-btn' : ''}><SelectorIcon /> {selectorMode === 'edit' ? 'Cancel Edit' : 'Edit Element'}</button>
+                        <button onClick={() => setSelectorMode(selectorMode === 'extract' ? false : 'extract')} className={selectorMode === 'extract' ? 'active-btn' : ''}><CodeIcon /> {selectorMode === 'extract' ? 'Cancel Extract' : 'Extract'}</button>
                         <button onClick={handleGenerateVariations} disabled={isLoading}><SparklesIcon /> Variations</button>
                         <button onClick={handlePortToReact} disabled={isLoading}><ReactIcon /> Port to React</button>
                         <button onClick={handleSaveToLibrary} title="Archive to Library"><SaveIcon /> Store</button>
                         <button onClick={handleShowAgentPrompt}><BrainIcon /> Agent Logic</button>
                         <button onClick={handleShowCode}><CodeIcon /> HTML/CSS</button>
                     </div>
-                    {isSelectorMode && <div className="selector-tip">Click any element in the preview to extract it.</div>}
+                    {selectorMode && <div className="selector-tip">{selectorMode === 'edit' ? 'Click any element to edit its styles.' : 'Click any element to extract it as a component.'}</div>}
                 </div>
                 <div className="floating-input-container">
                     {activeSystem && (
