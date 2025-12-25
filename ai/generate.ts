@@ -23,6 +23,14 @@ import {
   type StreamSnippetToReactOptions,
   type StreamVariationsOptions,
 } from './gemini';
+import {
+  glmGenerateStyles,
+  glmStreamHtmlArtifact,
+  glmStreamReactComponent,
+  glmStreamSnippetExtraction,
+  glmStreamSnippetToReact,
+  glmStreamVariations,
+} from './glm';
 
 // ============================================================================
 // Facade Types
@@ -66,8 +74,7 @@ export async function generateStyles(options: FacadeGenerateStylesOptions): Prom
     case 'gemini':
       return geminiGenerateStyles(rest);
     case 'glm':
-      // GLM implementation will be added in Stack 4
-      throw new Error('GLM provider not yet implemented');
+      return glmGenerateStyles(rest);
     default:
       throw new Error(`Unknown provider: ${provider}`);
   }
@@ -86,8 +93,8 @@ export async function* streamHtmlArtifact(
       yield* geminiStreamHtmlArtifact(rest);
       break;
     case 'glm':
-      // GLM implementation will be added in Stack 4
-      throw new Error('GLM provider not yet implemented');
+      yield* glmStreamHtmlArtifact(rest);
+      break;
     default:
       throw new Error(`Unknown provider: ${provider}`);
   }
@@ -106,8 +113,8 @@ export async function* streamReactComponent(
       yield* geminiStreamReactComponent(rest);
       break;
     case 'glm':
-      // GLM implementation will be added in Stack 4
-      throw new Error('GLM provider not yet implemented');
+      yield* glmStreamReactComponent(rest);
+      break;
     default:
       throw new Error(`Unknown provider: ${provider}`);
   }
@@ -126,8 +133,8 @@ export async function* streamSnippetExtraction(
       yield* geminiStreamSnippetExtraction(rest);
       break;
     case 'glm':
-      // GLM implementation will be added in Stack 4
-      throw new Error('GLM provider not yet implemented');
+      yield* glmStreamSnippetExtraction(rest);
+      break;
     default:
       throw new Error(`Unknown provider: ${provider}`);
   }
@@ -146,8 +153,8 @@ export async function* streamSnippetToReact(
       yield* geminiStreamSnippetToReact(rest);
       break;
     case 'glm':
-      // GLM implementation will be added in Stack 4
-      throw new Error('GLM provider not yet implemented');
+      yield* glmStreamSnippetToReact(rest);
+      break;
     default:
       throw new Error(`Unknown provider: ${provider}`);
   }
@@ -166,8 +173,8 @@ export async function* streamVariations(
       yield* geminiStreamVariations(rest);
       break;
     case 'glm':
-      // GLM implementation will be added in Stack 4
-      throw new Error('GLM provider not yet implemented');
+      yield* glmStreamVariations(rest);
+      break;
     default:
       throw new Error(`Unknown provider: ${provider}`);
   }

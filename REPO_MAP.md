@@ -1,12 +1,15 @@
 # Repository Map
 
-Generated on: 12/25/2025, 2:00:08 AM
+Generated on: 12/25/2025, 2:26:20 AM
 
 ```text
 └── my-flash-ui-app (1)/
     ├── ai/
+    │   ├── gemini.ts
+    │   ├── generate.ts
     │   ├── glmClient.ts
-    │   └── glmSmokeTest.ts
+    │   ├── glmSmokeTest.ts
+    │   └── providers.ts
     ├── command/
     │   ├── Always.md
     │   ├── APP_ARCHITECTURE.md
@@ -139,5 +142,6 @@ Generated on: 12/25/2025, 2:00:08 AM
     ├── tsconfig.json
     ├── types.ts
     ├── utils.ts
+    ├── vite-env.d.ts
     └── vite.config.ts
 ```
