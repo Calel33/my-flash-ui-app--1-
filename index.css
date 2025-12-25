@@ -60,6 +60,66 @@ body {
     transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
+.glm-loading-indicator {
+    position: absolute;
+    top: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: rgba(24, 24, 27, 0.9);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 0 24px rgba(59, 130, 246, 0.25);
+    z-index: 50;
+}
+
+.glm-loading-orbit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.glm-loading-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--accent-color);
+    opacity: 0.3;
+    animation: glmPulse 1.2s ease-in-out infinite;
+}
+
+.glm-loading-dot-delay {
+    animation-delay: 0.2s;
+}
+
+.glm-loading-dot-delay-more {
+    animation-delay: 0.4s;
+}
+
+.glm-loading-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+@keyframes glmPulse {
+    0%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.3;
+    }
+    50% {
+        transform: translateY(-4px);
+        opacity: 1;
+    }
+}
+
 .empty-state {
     position: absolute;
     inset: 0;

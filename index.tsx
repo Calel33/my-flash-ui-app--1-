@@ -34,6 +34,7 @@ import {
 type ModelId = string;
 
 import DottedGlowBackground from './components/DottedGlowBackground';
+import GlmLoadingIndicator from './components/GlmLoadingIndicator';
 import ArtifactCard from './components/ArtifactCard';
 import SideDrawer from './components/SideDrawer';
 import ElementEditor, { ElementData } from './components/ElementEditor';
@@ -666,6 +667,7 @@ function App() {
     };
 
     const hasStarted = sessions.length > 0 || isLoading;
+    const isGlmLoading = isLoading && provider === 'glm';
     const currentSession = sessions[currentSessionIndex];
     const canGoBack = (focusedArtifactIndex !== null && focusedArtifactIndex > 0) || currentSessionIndex > 0;
     const canGoForward = (focusedArtifactIndex !== null && currentSession && focusedArtifactIndex < currentSession.artifacts.length - 1) || currentSessionIndex < sessions.length - 1;
@@ -781,6 +783,9 @@ function App() {
                             </div>
                         </div>
                     </div>
+                    {isGlmLoading && (
+                        <GlmLoadingIndicator />
+                    )}
                     {sessions.map((session, sIndex) => (
                         <div key={session.id} className={`session-group ${sIndex === currentSessionIndex ? 'active-session' : sIndex < currentSessionIndex ? 'past-session' : 'future-session'}`}>
                             <div className="artifact-grid" ref={sIndex === currentSessionIndex ? gridScrollRef : null}>
