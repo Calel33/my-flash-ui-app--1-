@@ -9,6 +9,7 @@
  */
 
 import { glmClient, isGlmConfigured } from './glmClient';
+import type OpenAI from 'openai';
 import type {
   GenerateStylesOptions,
   StreamHtmlArtifactOptions,
@@ -22,6 +23,25 @@ export { isGlmConfigured };
 
 // Default GLM model
 const DEFAULT_GLM_MODEL = 'glm-4.7';
+
+// ============================================================================
+// Stream Iteration Helper
+// ============================================================================
+
+/**
+ * Helper to iterate over OpenAI-compatible chat completion streams.
+ * Extracts text content from each chunk and yields it.
+ */
+async function* iterateStream(
+  stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>
+): AsyncGenerator<string, void, unknown> {
+  for await (const chunk of stream) {
+    const text = chunk.choices?.[0]?.delta?.content ?? '';
+    if (text) {
+      yield text;
+    }
+  }
+}
 
 // ============================================================================
 // Style Generation (Non-streaming)
@@ -54,7 +74,10 @@ export async function glmGenerateStyles(options: GenerateStylesOptions): Promise
     const raw = completion.choices[0]?.message?.content ?? '[]';
     const match = raw.match(/\[[\s\S]*\]/);
     if (match) {
-      generatedStyles = JSON.parse(match[0]);
+      const parsed = JSON.parse(match[0]);
+      if (Array.isArray(parsed) && parsed.every((s) => typeof s === 'string')) {
+        generatedStyles = parsed;
+      }
     }
   } catch {
     // Fall back to defaults if parsing fails
@@ -88,13 +111,7 @@ export async function* glmStreamHtmlArtifact(
     stream: true,
   });
 
-  for await (const chunk of stream) {
-    const delta = chunk.choices?.[0]?.delta;
-    const text = delta?.content ?? '';
-    if (text) {
-      yield text;
-    }
-  }
+  yield* iterateStream(stream);
 }
 
 // ============================================================================
@@ -124,13 +141,7 @@ export async function* glmStreamReactComponent(
     stream: true,
   });
 
-  for await (const chunk of stream) {
-    const delta = chunk.choices?.[0]?.delta;
-    const text = delta?.content ?? '';
-    if (text) {
-      yield text;
-    }
-  }
+  yield* iterateStream(stream);
 }
 
 // ============================================================================
@@ -174,13 +185,7 @@ ${documentHtml}
     stream: true,
   });
 
-  for await (const chunk of stream) {
-    const delta = chunk.choices?.[0]?.delta;
-    const text = delta?.content ?? '';
-    if (text) {
-      yield text;
-    }
-  }
+  yield* iterateStream(stream);
 }
 
 // ============================================================================
@@ -218,13 +223,7 @@ ${snippetHtml}
     stream: true,
   });
 
-  for await (const chunk of stream) {
-    const delta = chunk.choices?.[0]?.delta;
-    const text = delta?.content ?? '';
-    if (text) {
-      yield text;
-    }
-  }
+  yield* iterateStream(stream);
 }
 
 // ============================================================================
@@ -257,11 +256,5 @@ Required JSON Format: { "name": "Name", "html": "..." }
     stream: true,
   });
 
-  for await (const chunk of stream) {
-    const delta = chunk.choices?.[0]?.delta;
-    const text = delta?.content ?? '';
-    if (text) {
-      yield text;
-    }
-  }
+  yield* iterateStream(stream);
 }

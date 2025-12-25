@@ -1206,6 +1206,46 @@ body {
     color: var(--text-primary);
 }
 
+/* Provider Select Control (D13) */
+.provider-select-control {
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    border-left: 1px solid var(--border-color);
+}
+
+.provider-select {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s;
+    font-family: var(--font-sans);
+}
+
+.provider-select:hover:not(:disabled) {
+    border-color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.provider-select:focus {
+    border-color: var(--accent-color);
+}
+
+.provider-select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.provider-select option {
+    background: var(--stage-bg);
+    color: var(--text-primary);
+}
+
 @media (max-width: 1024px) {
     .artifact-grid {
         grid-template-columns: 1fr;

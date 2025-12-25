@@ -16,6 +16,9 @@ import {
     MODELS, 
     getComponentModels, 
     getDesignSystemModels,
+    getDefaultModel,
+    isProviderConfigured,
+    PROVIDER_CONFIG,
     type ProviderId 
 } from './ai/providers';
 import {
@@ -27,12 +30,6 @@ import {
     streamVariations,
     cleanCodeFences,
 } from './ai/generate';
-
-// Current provider (hard-coded to 'gemini' for now, provider toggle will be added in Stack 5)
-const CURRENT_PROVIDER: ProviderId = 'gemini';
-
-// Derive available models from the unified registry (gemini only for now, provider switch in Stack 5)
-const AVAILABLE_MODELS = MODELS.filter(m => m.provider === CURRENT_PROVIDER);
 
 type ModelId = string;
 
@@ -71,6 +68,19 @@ function App() {
         const saved = localStorage.getItem('flash_ui_concurrent_generations');
         return saved ? Math.min(5, Math.max(1, parseInt(saved, 10))) : 3;
     });
+
+    // Provider state (D13)
+    const [provider, setProvider] = useState<ProviderId>(() => {
+        const saved = localStorage.getItem('flash_ui_provider');
+        if (saved === 'gemini' || saved === 'glm') {
+            return saved;
+        }
+        return 'gemini';
+    });
+
+    // Derive available models based on current provider (D14)
+    const availableModels = MODELS.filter(m => m.provider === provider);
+
     const [componentModel, setComponentModel] = useState<ModelId>(() => {
         const saved = localStorage.getItem('flash_ui_component_model');
         return (saved as ModelId) || 'gemini-3-flash-preview';
@@ -124,6 +134,23 @@ function App() {
         localStorage.setItem('flash_ui_concurrent_generations', concurrentGenerations.toString());
     }, [concurrentGenerations]);
 
+    // Persist provider to localStorage (D13)
+    useEffect(() => {
+        localStorage.setItem('flash_ui_provider', provider);
+    }, [provider]);
+
+    // Reset model selections when provider changes (D14)
+    useEffect(() => {
+        const defaultModel = getDefaultModel(provider, false);
+        const defaultDesignModel = getDefaultModel(provider, true);
+        if (defaultModel) {
+            setComponentModel(defaultModel.id);
+        }
+        if (defaultDesignModel) {
+            setDesignSystemModel(defaultDesignModel.id);
+        }
+    }, [provider]);
+
     useEffect(() => {
         localStorage.setItem('flash_ui_component_model', componentModel);
     }, [componentModel]);
@@ -168,7 +195,7 @@ function App() {
 
         try {
             const stream = streamSnippetExtraction({
-                provider: CURRENT_PROVIDER,
+                provider: provider,
                 snippetHtml,
                 documentHtml: currentArtifact.html,
             });
@@ -184,7 +211,7 @@ function App() {
         } finally {
             setIsLoading(false);
         }
-    }, [sessions, currentSessionIndex, focusedArtifactIndex]);
+    }, [sessions, currentSessionIndex, focusedArtifactIndex, provider]);
 
     const handlePortSnippetToReact = useCallback(async () => {
         if (drawerState.reactData || isReactLoading) return;
@@ -192,7 +219,7 @@ function App() {
         setIsReactLoading(true);
         try {
             const stream = streamSnippetToReact({
-                provider: CURRENT_PROVIDER,
+                provider: provider,
                 snippetHtml: drawerState.data,
                 modelId: componentModel,
             });
@@ -208,7 +235,7 @@ function App() {
         } finally {
             setIsReactLoading(false);
         }
-    }, [drawerState.data, drawerState.reactData, isReactLoading, componentModel]);
+    }, [drawerState.data, drawerState.reactData, isReactLoading, componentModel, provider]);
 
     useEffect(() => {
         if (snippetTab === 'react' && drawerState.mode === 'snippet' && !drawerState.reactData) {
@@ -227,7 +254,7 @@ function App() {
 
         try {
             const stream = streamVariations({
-                provider: CURRENT_PROVIDER,
+                provider: provider,
                 prompt: currentSession.prompt,
             });
 
@@ -267,7 +294,7 @@ function App() {
         } finally {
             setIsLoading(false);
         }
-    }, [sessions, currentSessionIndex, focusedArtifactIndex]);
+    }, [sessions, currentSessionIndex, focusedArtifactIndex, provider]);
 
     const handlePortToReact = useCallback(async () => {
         const currentSession = sessions[currentSessionIndex];
@@ -279,7 +306,7 @@ function App() {
 
         try {
             const stream = streamReactComponent({
-                provider: CURRENT_PROVIDER,
+                provider: provider,
                 html: currentArtifact.html,
                 modelId: componentModel,
             });
@@ -293,7 +320,7 @@ function App() {
         } finally {
             setIsLoading(false);
         }
-    }, [sessions, currentSessionIndex, focusedArtifactIndex, componentModel]);
+    }, [sessions, currentSessionIndex, focusedArtifactIndex, componentModel, provider]);
 
     const handleDownload = useCallback((content: string) => {
         if (!content) return;
@@ -570,7 +597,7 @@ function App() {
         try {
             // Generate style directions using the facade
             const generatedStyles = await generateStyles({
-                provider: CURRENT_PROVIDER,
+                provider: provider,
                 prompt: trimmedInput,
                 isDesignSystemMode,
             });
@@ -596,7 +623,7 @@ function App() {
                 } : sess));
 
                 const stream = streamHtmlArtifact({
-                    provider: CURRENT_PROVIDER,
+                    provider: provider,
                     prompt: finalPrompt,
                     modelId: isDesignSystemMode ? designSystemModel : componentModel,
                     useThinking: isDesignSystemMode,
@@ -619,7 +646,7 @@ function App() {
         } finally {
             setIsLoading(false);
         }
-    }, [inputValue, isLoading, sessions.length, isDesignSystemMode, activeSystem, concurrentGenerations, designSystemModel, componentModel]);
+    }, [inputValue, isLoading, sessions.length, isDesignSystemMode, activeSystem, concurrentGenerations, designSystemModel, componentModel, provider]);
 
     const handleSurpriseMe = () => {
         const p = placeholders[placeholderIndex];
@@ -790,6 +817,17 @@ function App() {
                         <button className={`mini-mode-toggle ${isDesignSystemMode ? 'active' : ''}`} title="Design System Mode" onClick={() => setIsDesignSystemMode(!isDesignSystemMode)}><PaletteIcon /></button>
                         <button className="mini-mode-toggle" title="My Creative Library" onClick={handleShowLibrary}><LibraryIcon /></button>
                         <button className="mini-mode-toggle" title="Import HTML Design" onClick={handleShowImport}><UploadIcon /></button>
+                        <div className="provider-select-control" title="AI Provider">
+                            <select
+                                value={provider}
+                                onChange={(e) => setProvider(e.target.value as ProviderId)}
+                                className="provider-select"
+                                disabled={isLoading}
+                            >
+                                <option value="gemini">Gemini</option>
+                                <option value="glm">GLM</option>
+                            </select>
+                        </div>
                         <div className="generation-count-control" title="Number of concurrent generations">
                             <input
                                 type="range"
@@ -816,7 +854,7 @@ function App() {
                                 className="model-select"
                                 disabled={isLoading}
                             >
-                                {AVAILABLE_MODELS.map(model => (
+                                {availableModels.map(model => (
                                     <option key={model.id} value={model.id}>{model.name}</option>
                                 ))}
                             </select>
