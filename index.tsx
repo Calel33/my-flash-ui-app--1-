@@ -36,6 +36,7 @@ type ModelId = string;
 import DottedGlowBackground from './components/DottedGlowBackground';
 import GlmLoadingIndicator from './components/GlmLoadingIndicator';
 import ArtifactCard from './components/ArtifactCard';
+import PromptPopup from './components/PromptPopup';
 import SideDrawer from './components/SideDrawer';
 import ElementEditor, { ElementData } from './components/ElementEditor';
 import ImportDesignPanel from './components/ImportDesignPanel';
@@ -101,6 +102,9 @@ function App() {
     const [isDesignSystemMode, setIsDesignSystemMode] = useState<boolean>(false);
     const [snippetTab, setSnippetTab] = useState<'html' | 'react'>('html');
     const [copyFeedback, setCopyFeedback] = useState<boolean>(false);
+    const [isArtifactFullscreen, setIsArtifactFullscreen] = useState<boolean>(false);
+
+    const [isPromptPopupOpen, setIsPromptPopupOpen] = useState<boolean>(false);
 
     const [drawerState, setDrawerState] = useState<{
         isOpen: boolean;
@@ -117,7 +121,7 @@ function App() {
     const [editingElement, setEditingElement] = useState<ElementData | null>(null);
     const [isElementEditorOpen, setIsElementEditorOpen] = useState(false);
 
-    const inputRef = useRef<HTMLInputElement>(null);
+    const inputRef = useRef<HTMLTextAreaElement>(null);
     const gridScrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -564,9 +568,14 @@ function App() {
     }, [focusedArtifactIndex, currentSessionIndex]);
 
     // Add handleInputChange to resolve the missing name error
-    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        setInputValue(e.target.value);
-    }, []);
+    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { value, scrollHeight, clientHeight } = e.target;
+        setInputValue(value);
+
+        if (!isPromptPopupOpen && scrollHeight > clientHeight + 4) {
+            setIsPromptPopupOpen(true);
+        }
+    }, [isPromptPopupOpen]);
 
     const handleSendMessage = useCallback(async (manualPrompt?: string) => {
         const promptToUse = manualPrompt || inputValue;
@@ -770,7 +779,7 @@ function App() {
                 )}
             </SideDrawer>
 
-            <div className="immersive-app">
+            <div className={`immersive-app ${isArtifactFullscreen ? 'fullscreen-artifact' : ''}`}>
                 <DottedGlowBackground gap={24} radius={1.5} color="rgba(255, 255, 255, 0.02)" glowColor="rgba(255, 255, 255, 0.15)" speedScale={0.5} />
                 <div className={`stage-container ${focusedArtifactIndex !== null ? 'mode-focus' : 'mode-split'}`}>
                     <div className={`empty-state ${hasStarted ? 'fade-out' : ''}`}>
@@ -802,6 +811,14 @@ function App() {
                     <div className="active-prompt-label">{currentSession?.prompt}</div>
                     <div className="action-buttons">
                         <button onClick={() => { setFocusedArtifactIndex(null); setSelectorMode(false); }}><GridIcon /> Grid View</button>
+                        {focusedArtifactIndex !== null && (
+                            <button
+                                onClick={() => setIsArtifactFullscreen(prev => !prev)}
+                                aria-pressed={isArtifactFullscreen}
+                            >
+                                {isArtifactFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                            </button>
+                        )}
                         <button onClick={() => setSelectorMode(selectorMode === 'edit' ? false : 'edit')} className={selectorMode === 'edit' ? 'active-btn' : ''}><SelectorIcon /> {selectorMode === 'edit' ? 'Cancel Edit' : 'Edit Element'}</button>
                         <button onClick={() => setSelectorMode(selectorMode === 'extract' ? false : 'extract')} className={selectorMode === 'extract' ? 'active-btn' : ''}><CodeIcon /> {selectorMode === 'extract' ? 'Cancel Extract' : 'Extract'}</button>
                         <button onClick={handleGenerateVariations} disabled={isLoading}><SparklesIcon /> Variations</button>
@@ -865,13 +882,42 @@ function App() {
                             </select>
                         </div>
                         {!isLoading ? (
-                            <input ref={inputRef} type="text" value={inputValue} placeholder={isDesignSystemMode ? "Describe brand architecture..." : "Describe a UI component..."} onChange={handleInputChange} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} />
+                            !isPromptPopupOpen ? (
+                                <textarea
+                                    ref={inputRef}
+                                    rows={1}
+                                    value={inputValue}
+                                    placeholder={isDesignSystemMode ? "Describe brand architecture..." : "Describe a UI component..."}
+                                    onChange={handleInputChange}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            handleSendMessage();
+                                        }
+                                    }}
+                                    className="prompt-inline-textarea"
+                                />
+                            ) : (
+                                <div className="input-popup-active-label">Editing prompt in popup…</div>
+                            )
                         ) : (
                             <div className="input-generating-label"><span className="generating-prompt-text">{currentSession?.prompt}</span><ThinkingIcon /></div>
                         )}
-                        <button className="send-button" onClick={() => handleSendMessage()} disabled={isLoading || !inputValue.trim()}><ArrowUpIcon /></button>
+                        <button className="send-button" onClick={() => handleSendMessage()} disabled={isLoading || !inputValue.trim() || isPromptPopupOpen}><ArrowUpIcon /></button>
                     </div>
                 </div>
+                <PromptPopup
+                    isOpen={isPromptPopupOpen}
+                    value={inputValue}
+                    onChange={setInputValue}
+                    onSend={() => {
+                        handleSendMessage();
+                        setIsPromptPopupOpen(false);
+                    }}
+                    onClose={() => setIsPromptPopupOpen(false)}
+                    isLoading={isLoading}
+                    placeholder={isDesignSystemMode ? 'Describe brand architecture...' : 'Describe a UI component...'}
+                />
             </div>
         </>
     );

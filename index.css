@@ -48,6 +48,12 @@ body {
     overflow: hidden;
 }
 
+.immersive-app.fullscreen-artifact .floating-input-container {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(20px);
+}
+
 .stage-container {
     position: absolute;
     top: 0;
@@ -404,6 +410,12 @@ body {
     pointer-events: auto;
 }
 
+.immersive-app.fullscreen-artifact .stage-container.mode-focus .artifact-card.focused {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+}
+
 .stage-container.mode-focus .artifact-card.focused .artifact-iframe {
     pointer-events: auto;
 }
@@ -516,6 +528,24 @@ body {
     font-size: 1rem;
 }
 
+.prompt-inline-textarea {
+    resize: none;
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.input-popup-active-label {
+    flex: 1;
+    min-width: 0;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
 .send-button {
     width: 40px;
     height: 40px;
@@ -542,6 +572,89 @@ body {
     align-items: center;
     gap: 8px;
     animation: slideUp 0.3s ease;
+}
+
+.prompt-popup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    z-index: 250;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 24px;
+}
+
+.prompt-popup {
+    width: 100%;
+    max-width: 720px;
+    background: rgba(24, 24, 27, 0.98);
+    border-radius: 20px;
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+}
+
+.prompt-popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 8px;
+}
+
+.prompt-popup-title {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-secondary);
+}
+
+.prompt-popup-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.prompt-popup-body {
+    padding: 4px 20px 12px;
+}
+
+.prompt-popup-textarea {
+    box-sizing: border-box;
+    width: 100%;
+    display: block;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    padding: 12px 14px;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    resize: vertical;
+    min-height: 120px;
+}
+
+.prompt-popup-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 20px 16px;
+}
+
+.prompt-popup-send {
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    border: none;
+    background: var(--accent-color);
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
 }
 
 .clear-ctx {
