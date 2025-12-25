@@ -1,6 +1,6 @@
 # Repository Map
 
-Generated on: 12/24/2025, 1:10:55 AM
+Generated on: 12/25/2025, 12:44:50 AM
 
 ```text
 └── my-flash-ui-app (1)/
@@ -43,40 +43,10 @@ Generated on: 12/24/2025, 1:10:55 AM
     │   ├── ElementEditor.tsx
     │   ├── Icons.tsx
     │   └── SideDrawer.tsx
-    ├── docs/
-    │   ├── core/
-    │   │   ├── API_REFERENCE.md
-    │   │   ├── APP_ARCHITECTURE.md
-    │   │   ├── ARCHITECTURE.md
-    │   │   ├── BUG_LOG.md
-    │   │   ├── DATA_MODEL.md
-    │   │   ├── DEVELOPMENT_GUIDE.md
-    │   │   ├── PRODUCT_BRIEF.md
-    │   │   ├── PROJECT_PROGRESS.md
-    │   │   └── USER_GUIDE.md
-    │   ├── Design-system/
-    │   │   └── style.md
-    │   ├── memory/
-    │   │   ├── constitution_update_checklist.md
-    │   │   └── constitution.md
-    │   ├── project-files/
-    │   │   ├── agentshow.md
-    │   │   ├── create-plan.md
-    │   │   ├── mvp.md
-    │   │   ├── mvpscreens.md
-    │   │   ├── plan.md
-    │   │   ├── PRIME_CONTEXT.md
-    │   │   ├── researchtask.md
-    │   │   └── spec.md
-    │   ├── sessions/
-    │   │   └── general/
-    │   │       └── SESSION_2025-10-08_INITIAL_SETUP.md
-    │   ├── tasks/
-    │   │   └── example-task/
-    │   │       └── README.md
-    │   ├── AGENTS.md
-    │   ├── README.md
-    │   └── SESSION_LOG.md
+    ├── prompts/
+    │   └── 001-import-design-html-uploads.md
+    ├── server/
+    │   └── .env
     ├── skills/
     │   ├── beads/
     │   │   ├── references/

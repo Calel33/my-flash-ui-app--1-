@@ -12,7 +12,7 @@ import ReactDOM from 'react-dom/client';
 
 import { Artifact, Session, ComponentVariation, LayoutOption, LibraryItem } from './types';
 import { INITIAL_PLACEHOLDERS } from './constants';
-import { generateId } from './utils';
+import { generateId, slugifyName, ImportedDesignData, createArtifactFromImport, createLibraryItemFromImport } from './utils';
 
 // Available Gemini models
 const AVAILABLE_MODELS = [
@@ -26,6 +26,7 @@ import DottedGlowBackground from './components/DottedGlowBackground';
 import ArtifactCard from './components/ArtifactCard';
 import SideDrawer from './components/SideDrawer';
 import ElementEditor, { ElementData } from './components/ElementEditor';
+import ImportDesignPanel from './components/ImportDesignPanel';
 import {
     ThinkingIcon,
     CodeIcon,
@@ -42,7 +43,8 @@ import {
     PaletteIcon,
     LibraryIcon,
     SaveIcon,
-    TrashIcon
+    TrashIcon,
+    UploadIcon
 } from './components/Icons';
 
 function App() {
@@ -77,10 +79,11 @@ function App() {
 
     const [drawerState, setDrawerState] = useState<{
         isOpen: boolean;
-        mode: 'code' | 'variations' | 'react' | 'snippet' | 'agent-prompt' | 'library' | null;
+        mode: 'code' | 'variations' | 'react' | 'snippet' | 'agent-prompt' | 'library' | 'import' | null;
         title: string;
         data: string;
         reactData?: string;
+        artifactName?: string;
     }>({ isOpen: false, mode: null, title: '', data: '' });
 
     const [componentVariations, setComponentVariations] = useState<ComponentVariation[]>([]);
@@ -343,9 +346,14 @@ Required JSON Format: { "name": "Name", "html": "..." }
         const isReact = drawerState.mode === 'react' || (drawerState.mode === 'snippet' && snippetTab === 'react');
         const isPrompt = drawerState.mode === 'agent-prompt';
         const ext = isReact ? '.tsx' : isPrompt ? '.txt' : '.html';
-        const filename = `flash-ui-export${ext}`;
+        
+        const baseName = drawerState.artifactName 
+            ? slugifyName(drawerState.artifactName) 
+            : 'flash-ui-export';
+        const filename = `${baseName}${ext}`;
 
-        const blob = new Blob([content], { type: isReact ? 'text/typescript' : 'text/html' });
+        const mimeType = isReact ? 'text/typescript' : isPrompt ? 'text/plain' : 'text/html';
+        const blob = new Blob([content], { type: mimeType });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -354,7 +362,7 @@ Required JSON Format: { "name": "Name", "html": "..." }
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-    }, [drawerState.mode, snippetTab]);
+    }, [drawerState.mode, drawerState.artifactName, snippetTab]);
 
     const copyToClipboard = useCallback(async (text: string) => {
         if (!text) return;
@@ -397,7 +405,13 @@ Required JSON Format: { "name": "Name", "html": "..." }
         const currentSession = sessions[currentSessionIndex];
         if (currentSession && focusedArtifactIndex !== null) {
             const artifact = currentSession.artifacts[focusedArtifactIndex];
-            setDrawerState({ isOpen: true, mode: 'code', title: 'Source Code', data: artifact.html });
+            setDrawerState({ 
+                isOpen: true, 
+                mode: 'code', 
+                title: 'Source Code', 
+                data: artifact.html,
+                artifactName: artifact.displayName || artifact.styleName
+            });
         }
     };
 
@@ -409,7 +423,8 @@ Required JSON Format: { "name": "Name", "html": "..." }
                 isOpen: true,
                 mode: 'agent-prompt',
                 title: 'Agent Logic',
-                data: artifact.agentPrompt || 'Instruction metadata not available.'
+                data: artifact.agentPrompt || 'Instruction metadata not available.',
+                artifactName: artifact.displayName || artifact.styleName
             });
         }
     };
@@ -439,6 +454,36 @@ Required JSON Format: { "name": "Name", "html": "..." }
             data: ''
         });
     };
+
+    const handleShowImport = () => {
+        setDrawerState({
+            isOpen: true,
+            mode: 'import',
+            title: 'Import Design',
+            data: ''
+        });
+    };
+
+    const handleImportDesign = useCallback((data: ImportedDesignData, displayName: string, type: 'design-system' | 'component') => {
+        const sessionId = generateId();
+        const artifact = createArtifactFromImport(data, displayName, type === 'design-system', sessionId);
+        const libraryItem = createLibraryItemFromImport(data, displayName, type);
+
+        const newSession: Session = {
+            id: sessionId,
+            prompt: `Imported: ${displayName}`,
+            timestamp: Date.now(),
+            artifacts: type === 'design-system'
+                ? [artifact, { ...artifact, id: `${sessionId}_1`, styleName: 'Ref A' }, { ...artifact, id: `${sessionId}_2`, styleName: 'Ref B' }]
+                : [artifact]
+        };
+
+        setSessions(prev => [...prev, newSession]);
+        setCurrentSessionIndex(sessions.length);
+        setFocusedArtifactIndex(0);
+        setStoredItems(prev => [libraryItem, ...prev]);
+        setDrawerState(s => ({ ...s, isOpen: false }));
+    }, [sessions.length]);
 
     const toggleSystemContext = (item: LibraryItem, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -744,6 +789,12 @@ Required JSON Format: { "name": "Name", "html": "..." }
                         )}
                     </div>
                 )}
+                {drawerState.mode === 'import' && (
+                    <ImportDesignPanel
+                        onImport={handleImportDesign}
+                        onCancel={() => setDrawerState(s => ({ ...s, isOpen: false }))}
+                    />
+                )}
             </SideDrawer>
 
             <div className="immersive-app">
@@ -794,6 +845,7 @@ Required JSON Format: { "name": "Name", "html": "..." }
                     <div className={`input-wrapper ${isLoading ? 'loading' : ''} ${isDesignSystemMode ? 'design-system-active' : ''}`}>
                         <button className={`mini-mode-toggle ${isDesignSystemMode ? 'active' : ''}`} title="Design System Mode" onClick={() => setIsDesignSystemMode(!isDesignSystemMode)}><PaletteIcon /></button>
                         <button className="mini-mode-toggle" title="My Creative Library" onClick={handleShowLibrary}><LibraryIcon /></button>
+                        <button className="mini-mode-toggle" title="Import HTML Design" onClick={handleShowImport}><UploadIcon /></button>
                         <div className="generation-count-control" title="Number of concurrent generations">
                             <input
                                 type="range"
