@@ -1,6 +1,6 @@
 # Repository Map
 
-Generated on: 12/25/2025, 4:16:26 AM
+Generated on: 12/25/2025, 4:31:02 AM
 
 ```text
 └── my-flash-ui-app (1)/
@@ -49,12 +49,14 @@ Generated on: 12/25/2025, 4:16:26 AM
     │   ├── ArtifactCard.tsx
     │   ├── DottedGlowBackground.tsx
     │   ├── ElementEditor.tsx
+    │   ├── GlmLoadingIndicator.tsx
     │   ├── Icons.tsx
     │   ├── ImportDesignPanel.tsx
     │   └── SideDrawer.tsx
     ├── prompts/
     │   ├── 001-import-design-html-uploads.md
-    │   └── 002-add-glm-provider-research.md
+    │   ├── 002-add-glm-provider-research.md
+    │   └── 003-glm-loading-indicator.md
     ├── research/
     │   ├── glm-provider-diff-stack-plan.md
     │   ├── glm-provider-implementation-plan.md
