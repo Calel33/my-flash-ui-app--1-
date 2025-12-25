@@ -432,7 +432,8 @@ body {
 .input-wrapper {
     pointer-events: auto;
     width: 100%;
-    max-width: 600px;
+    max-width: 1000px;
+    flex: 1;
     background: var(--input-bg);
     backdrop-filter: blur(16px);
     border: 1px solid var(--border-color);
@@ -442,10 +443,12 @@ body {
     align-items: center;
     gap: 12px;
     transition: all 0.3s;
+    overflow: hidden;
 }
 
 .input-wrapper input {
     flex: 1;
+    min-width: 0;
     background: transparent;
     border: none;
     outline: none;
