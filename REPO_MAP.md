@@ -1,9 +1,12 @@
 # Repository Map
 
-Generated on: 12/25/2025, 12:44:50 AM
+Generated on: 12/25/2025, 2:00:08 AM
 
 ```text
 └── my-flash-ui-app (1)/
+    ├── ai/
+    │   ├── glmClient.ts
+    │   └── glmSmokeTest.ts
     ├── command/
     │   ├── Always.md
     │   ├── APP_ARCHITECTURE.md
@@ -42,9 +45,15 @@ Generated on: 12/25/2025, 12:44:50 AM
     │   ├── DottedGlowBackground.tsx
     │   ├── ElementEditor.tsx
     │   ├── Icons.tsx
+    │   ├── ImportDesignPanel.tsx
     │   └── SideDrawer.tsx
     ├── prompts/
-    │   └── 001-import-design-html-uploads.md
+    │   ├── 001-import-design-html-uploads.md
+    │   └── 002-add-glm-provider-research.md
+    ├── research/
+    │   ├── glm-provider-diff-stack-plan.md
+    │   ├── glm-provider-implementation-plan.md
+    │   └── glm-provider-integration.md
     ├── server/
     │   └── .env
     ├── skills/
@@ -117,6 +126,7 @@ Generated on: 12/25/2025, 12:44:50 AM
     │       ├── generate.js
     │       └── README.md
     ├── .env.local
+    ├── .env.local.example
     ├── .gitignore
     ├── AGENTS.md
     ├── constants.ts
