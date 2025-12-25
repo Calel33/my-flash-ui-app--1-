@@ -38,7 +38,21 @@ export default function PromptPopup({
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    textareaRef.current?.focus();
+
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.focus();
+      const length = textarea.value.length;
+      if (typeof textarea.setSelectionRange === 'function') {
+        // Ensure caret is placed at the end of the existing value
+        requestAnimationFrame(() => {
+          textarea.setSelectionRange(length, length);
+        });
+      } else {
+        textarea.selectionStart = length;
+        textarea.selectionEnd = length;
+      }
+    }
 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
