@@ -485,9 +485,7 @@ function App() {
             id: sessionId,
             prompt: `Imported: ${displayName}`,
             timestamp: Date.now(),
-            artifacts: type === 'design-system'
-                ? [artifact, { ...artifact, id: `${sessionId}_1`, styleName: 'Ref A' }, { ...artifact, id: `${sessionId}_2`, styleName: 'Ref B' }]
-                : [artifact]
+            artifacts: [artifact]
         };
 
         setSessions(prev => [...prev, newSession]);
@@ -528,9 +526,7 @@ function App() {
             id: sessionId,
             prompt: item.prompt,
             timestamp: Date.now(),
-            artifacts: item.type === 'design-system'
-                ? [artifact, { ...artifact, id: `${sessionId}_1`, styleName: 'Ref A' }, { ...artifact, id: `${sessionId}_2`, styleName: 'Ref B' }]
-                : [artifact]
+            artifacts: [artifact]
         };
 
         setSessions(prev => [...prev, newSession]);
