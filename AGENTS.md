@@ -47,16 +47,30 @@ Use grep (or ripgrep) for... Exact Matches, Symbol tracing, Refactoring, Regex
 
 Use mgrep for...Intent Search, Code exploration, Feature discovery, Onboarding
 
-- id: graphite_stacked_diffs
-    trigger: "code changes during development phase"
-    condition: "When creating or updating code beyond trivial edits"
-    action: "Use Graphite stacked diff workflow (gt create/modify/submit/sync) instead of raw git commit/push"
-    tool: "gt (Graphite CLI)"
-    purpose: "Ensure all work is organized as small, ordered stacked diffs"
-
     IMPORTANT: Use the Read tool WITHOUT limit/offset parameters to read entire files
 
 ---
+Agent Instruction — Skill-Aware Execution
+
+When a user provides a prompt:
+
+Do not guess. Do not assume missing requirements.
+
+Scan available skills and auto-load only the relevant ones needed to complete the task.
+
+Pull proven patterns, workflows, and constraints from those skills before writing any code or plan.
+
+Preserve existing behavior and architecture unless explicitly instructed otherwise.
+
+Execute directly using the loaded skills as the source of truth.
+
+Ask clarifying questions only if the task cannot be completed safely or correctly without them.
+
+Default behavior:
+Use skills first → then think → then act.
+skills folders:C:\Users\user1\Downloads\my-flash-ui-app (1)\skills
+C:\Users\user1\.factory\skills
+
 
 ## 2. Core Principles (Always Apply)
 
@@ -100,7 +114,7 @@ Before editing ANY file:
 
 ### File Organization
 - **One responsibility per file** — Single concern only
-- **Max file length: 500 lines** — Strictly enforced
+- **Max file length: 850 lines** — Strictly enforced
 - **Modular design** — Break large files into smaller modules
 - **Relative imports** — Use relative paths within domains
 
@@ -127,18 +141,7 @@ Before editing ANY file:
 - Tokens stored in: `design -system/`
 - Reference: `design -system/design.md`
 
----
 
-## 6. Graphite Workflow (Stacked Diffs)
-
-The Graphite workflow enables efficient code review and incremental development through stacked pull requests.
-
-### Core Principles
-
-#### 1. Small, Incremental Changes
-- Break features into small, logically cohesive diffs (typically 200-400 lines)
-- Each diff should represent a single, reviewable concept
-- Reduces cognitive load on reviewers and enables faster feedback
 
 
 ## 7. AI Agent Behavior
