@@ -11,6 +11,8 @@ export interface Artifact {
   agentPrompt?: string;
   status: 'streaming' | 'complete' | 'error';
   isDesignSystem?: boolean;
+  displayName?: string;
+  sourceFilename?: string;
 }
 
 export interface LibraryItem {
@@ -20,6 +22,8 @@ export interface LibraryItem {
     html: string;
     type: 'design-system' | 'component';
     timestamp: number;
+    displayName?: string;
+    sourceFilename?: string;
 }
 
 export interface Session {
