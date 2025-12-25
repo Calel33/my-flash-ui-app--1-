@@ -6,7 +6,6 @@
 
 //Vibe coded by ammaar@google.com
 
-import { GoogleGenAI } from '@google/genai';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 
@@ -19,9 +18,21 @@ import {
     getDesignSystemModels,
     type ProviderId 
 } from './ai/providers';
+import {
+    generateStyles,
+    streamHtmlArtifact,
+    streamReactComponent,
+    streamSnippetExtraction,
+    streamSnippetToReact,
+    streamVariations,
+    cleanCodeFences,
+} from './ai/generate';
+
+// Current provider (hard-coded to 'gemini' for now, provider toggle will be added in Stack 5)
+const CURRENT_PROVIDER: ProviderId = 'gemini';
 
 // Derive available models from the unified registry (gemini only for now, provider switch in Stack 5)
-const AVAILABLE_MODELS = MODELS.filter(m => m.provider === 'gemini');
+const AVAILABLE_MODELS = MODELS.filter(m => m.provider === CURRENT_PROVIDER);
 
 type ModelId = string;
 
@@ -156,40 +167,17 @@ function App() {
         setDrawerState({ isOpen: true, mode: 'snippet', title: 'Isolated Component', data: '', reactData: '' });
 
         try {
-            const apiKey = process.env.API_KEY;
-            if (!apiKey) throw new Error("API_KEY is not configured.");
-            const ai = new GoogleGenAI({ apiKey });
-
-            const prompt = `
-I have a full HTML/CSS document and I've selected a specific element from it. 
-Your task is to extract this element and ALL its required CSS/JS into a clean, standalone HTML file.
-
-**SELECTED ELEMENT:**
-${snippetHtml}
-
-**ORIGINAL DOCUMENT CONTEXT:**
-${currentArtifact.html}
-
-**REQUIREMENTS:**
-1. Return a single, valid HTML file containing the selected HTML and necessary <style> tags.
-2. Use a modern, clean approach.
-3. Return ONLY the code. No markdown.
-        `.trim();
-
-            const responseStream = await ai.models.generateContentStream({
-                model: 'gemini-3-flash-preview',
-                contents: [{ parts: [{ text: prompt }], role: 'user' }],
-                config: { thinkingConfig: { thinkingBudget: 4000 } }
+            const stream = streamSnippetExtraction({
+                provider: CURRENT_PROVIDER,
+                snippetHtml,
+                documentHtml: currentArtifact.html,
             });
 
             let accumulated = '';
-            for await (const chunk of responseStream) {
-                const text = chunk.text;
-                if (typeof text === 'string') {
-                    accumulated += text;
-                    const clean = accumulated.replace(/^```[a-z]*\n/i, '').replace(/\n```$/, '');
-                    setDrawerState(prev => ({ ...prev, data: clean }));
-                }
+            for await (const chunk of stream) {
+                accumulated += chunk;
+                const clean = cleanCodeFences(accumulated);
+                setDrawerState(prev => ({ ...prev, data: clean }));
             }
         } catch (e: any) {
             setDrawerState(prev => ({ ...prev, data: `Error: ${e.message}` }));
@@ -203,42 +191,24 @@ ${currentArtifact.html}
 
         setIsReactLoading(true);
         try {
-            const apiKey = process.env.API_KEY;
-            if (!apiKey) throw new Error("API_KEY is not configured.");
-            const ai = new GoogleGenAI({ apiKey });
-
-            const prompt = `
-Convert the following isolated HTML/CSS snippet into a clean, production-ready React functional component.
-1. Use functional structure.
-2. Include ALL necessary styles within a scoped <style> tag.
-3. Name the component 'Component'.
-4. Return ONLY the React code. No markdown.
-
-Snippet:
-${drawerState.data}
-        `.trim();
-
-            const responseStream = await ai.models.generateContentStream({
-                model: componentModel,
-                contents: [{ parts: [{ text: prompt }], role: 'user' }],
-                config: { thinkingConfig: { thinkingBudget: 6000 } }
+            const stream = streamSnippetToReact({
+                provider: CURRENT_PROVIDER,
+                snippetHtml: drawerState.data,
+                modelId: componentModel,
             });
 
             let accumulated = '';
-            for await (const chunk of responseStream) {
-                const text = chunk.text;
-                if (typeof text === 'string') {
-                    accumulated += text;
-                    const clean = accumulated.replace(/^```[a-z]*\n/i, '').replace(/\n```$/, '');
-                    setDrawerState(prev => ({ ...prev, reactData: clean }));
-                }
+            for await (const chunk of stream) {
+                accumulated += chunk;
+                const clean = cleanCodeFences(accumulated);
+                setDrawerState(prev => ({ ...prev, reactData: clean }));
             }
         } catch (e: any) {
             setDrawerState(prev => ({ ...prev, reactData: `// Error: ${e.message}` }));
         } finally {
             setIsReactLoading(false);
         }
-    }, [drawerState.data, drawerState.reactData, isReactLoading]);
+    }, [drawerState.data, drawerState.reactData, isReactLoading, componentModel]);
 
     useEffect(() => {
         if (snippetTab === 'react' && drawerState.mode === 'snippet' && !drawerState.reactData) {
@@ -256,26 +226,14 @@ ${drawerState.data}
         setDrawerState({ isOpen: true, mode: 'variations', title: 'Variations', data: currentArtifact.id });
 
         try {
-            const apiKey = process.env.API_KEY;
-            if (!apiKey) throw new Error("API_KEY is not configured.");
-            const ai = new GoogleGenAI({ apiKey });
-
-            const prompt = `
-Generate 3 RADICAL CONCEPTUAL VARIATIONS of: "${currentSession.prompt}".
-Required JSON Format: { "name": "Name", "html": "..." }
-        `.trim();
-
-            const responseStream = await ai.models.generateContentStream({
-                model: 'gemini-3-flash-preview',
-                contents: [{ parts: [{ text: prompt }], role: 'user' }],
-                config: { temperature: 1.2 }
+            const stream = streamVariations({
+                provider: CURRENT_PROVIDER,
+                prompt: currentSession.prompt,
             });
 
             let buffer = '';
-            for await (const chunk of responseStream) {
-                const text = chunk.text;
-                if (typeof text !== 'string') continue;
-                buffer += text;
+            for await (const chunk of stream) {
+                buffer += chunk;
                 let braceCount = 0;
                 let start = buffer.indexOf('{');
                 while (start !== -1) {
@@ -320,29 +278,22 @@ Required JSON Format: { "name": "Name", "html": "..." }
         setDrawerState({ isOpen: true, mode: 'react', title: 'React Component', data: '' });
 
         try {
-            const apiKey = process.env.API_KEY;
-            const ai = new GoogleGenAI({ apiKey });
-            const prompt = `Convert the following high-fidelity HTML/CSS component into a production-ready React component. Return ONLY the code. No markdown.\n\nHTML:\n${currentArtifact.html}`;
-
-            const responseStream = await ai.models.generateContentStream({
-                model: componentModel,
-                contents: [{ parts: [{ text: prompt }], role: 'user' }],
-                config: { thinkingConfig: { thinkingBudget: 8000 } }
+            const stream = streamReactComponent({
+                provider: CURRENT_PROVIDER,
+                html: currentArtifact.html,
+                modelId: componentModel,
             });
 
             let accumulated = '';
-            for await (const chunk of responseStream) {
-                const text = chunk.text;
-                if (typeof text === 'string') {
-                    accumulated += text;
-                    const clean = accumulated.replace(/^```[a-z]*\n/i, '').replace(/\n```$/, '');
-                    setDrawerState(prev => ({ ...prev, data: clean }));
-                }
+            for await (const chunk of stream) {
+                accumulated += chunk;
+                const clean = cleanCodeFences(accumulated);
+                setDrawerState(prev => ({ ...prev, data: clean }));
             }
         } finally {
             setIsLoading(false);
         }
-    }, [sessions, currentSessionIndex, focusedArtifactIndex]);
+    }, [sessions, currentSessionIndex, focusedArtifactIndex, componentModel]);
 
     const handleDownload = useCallback((content: string) => {
         if (!content) return;
@@ -617,8 +568,16 @@ Required JSON Format: { "name": "Name", "html": "..." }
         setFocusedArtifactIndex(null);
 
         try {
-            const apiKey = process.env.API_KEY;
-            const ai = new GoogleGenAI({ apiKey });
+            // Generate style directions using the facade
+            const generatedStyles = await generateStyles({
+                provider: CURRENT_PROVIDER,
+                prompt: trimmedInput,
+                isDesignSystemMode,
+            });
+
+            setSessions(prev => prev.map(s => s.id === sessionId ? {
+                ...s, artifacts: s.artifacts.map((art, i) => ({ ...art, styleName: generatedStyles[i] || `Direction ${i + 1}` }))
+            } : s));
 
             const systemInstructions = isDesignSystemMode
                 ? `You are a Lead Design Systems Architect. Create a FULL DESIGN SYSTEM style guide and component library for: "${trimmedInput}".`
@@ -629,25 +588,6 @@ Required JSON Format: { "name": "Name", "html": "..." }
                    Ensure the component looks like it belongs to this brand and uses the provided variables (colors, spacing, typography).`
                     : `Create a stunning high-fidelity UI component for: "${trimmedInput}".`;
 
-            const stylePrompt = isDesignSystemMode
-                ? `Generate 3 distinct Brand Personalities for: "${trimmedInput}". Return ONLY a raw JSON array of 3 names.`
-                : `Generate 3 distinct design directions for: "${trimmedInput}". Return ONLY a raw JSON array of 3 names.`;
-
-            const styleResponse = await ai.models.generateContent({
-                model: 'gemini-3-flash-preview',
-                contents: { role: 'user', parts: [{ text: stylePrompt }] }
-            });
-
-            let generatedStyles = ["Style A", "Style B", "Style C"];
-            try {
-                const match = styleResponse.text?.match(/\[[\s\S]*\]/);
-                if (match) generatedStyles = JSON.parse(match[0]);
-            } catch { }
-
-            setSessions(prev => prev.map(s => s.id === sessionId ? {
-                ...s, artifacts: s.artifacts.map((art, i) => ({ ...art, styleName: generatedStyles[i] || `Direction ${i + 1}` }))
-            } : s));
-
             const generateArtifact = async (artifact: Artifact, style: string) => {
                 const finalPrompt = systemInstructions + `\n\nDirection: ${style}. Return RAW HTML only.`;
 
@@ -655,20 +595,21 @@ Required JSON Format: { "name": "Name", "html": "..." }
                     ...sess, artifacts: sess.artifacts.map(art => art.id === artifact.id ? { ...art, agentPrompt: finalPrompt } : art)
                 } : sess));
 
-                const responseStream = await ai.models.generateContentStream({
-                    model: isDesignSystemMode ? designSystemModel : componentModel,
-                    contents: [{ parts: [{ text: finalPrompt }], role: "user" }],
-                    config: isDesignSystemMode ? { thinkingConfig: { thinkingBudget: 8000 } } : undefined
+                const stream = streamHtmlArtifact({
+                    provider: CURRENT_PROVIDER,
+                    prompt: finalPrompt,
+                    modelId: isDesignSystemMode ? designSystemModel : componentModel,
+                    useThinking: isDesignSystemMode,
                 });
 
                 let accumulated = '';
-                for await (const chunk of responseStream) {
-                    accumulated += chunk.text || '';
+                for await (const chunk of stream) {
+                    accumulated += chunk;
                     setSessions(prev => prev.map(sess => sess.id === sessionId ? {
                         ...sess, artifacts: sess.artifacts.map(art => art.id === artifact.id ? { ...art, html: accumulated } : art)
                     } : sess));
                 }
-                const final = accumulated.replace(/^```html\n/i, '').replace(/^```\n/i, '').replace(/\n```$/, '').trim();
+                const final = cleanCodeFences(accumulated);
                 setSessions(prev => prev.map(sess => sess.id === sessionId ? {
                     ...sess, artifacts: sess.artifacts.map(art => art.id === artifact.id ? { ...art, html: final, status: 'complete' } : art)
                 } : sess));
@@ -678,7 +619,7 @@ Required JSON Format: { "name": "Name", "html": "..." }
         } finally {
             setIsLoading(false);
         }
-    }, [inputValue, isLoading, sessions.length, isDesignSystemMode, activeSystem]);
+    }, [inputValue, isLoading, sessions.length, isDesignSystemMode, activeSystem, concurrentGenerations, designSystemModel, componentModel]);
 
     const handleSurpriseMe = () => {
         const p = placeholders[placeholderIndex];
