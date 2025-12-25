@@ -1,9 +1,11 @@
 # Repository Map
 
-Generated on: 12/25/2025, 3:18:50 PM
+Generated on: 12/25/2025, 3:36:30 PM
 
 ```text
 └── my-flash-ui-app (1)/
+    ├── agent/
+    │   └── CleanCodeImplementer.md
     ├── ai/
     │   ├── errors.ts
     │   ├── gemini.ts
@@ -58,7 +60,8 @@ Generated on: 12/25/2025, 3:18:50 PM
     │   ├── 001-import-design-html-uploads.md
     │   ├── 002-add-glm-provider-research.md
     │   ├── 003-glm-loading-indicator.md
-    │   └── 004-artifacts-fullscreen-input-popup.md
+    │   ├── 004-artifacts-fullscreen-input-popup.md
+    │   └── 005-expanded-prompt-input-caret.md
     ├── research/
     │   ├── glm-provider-diff-stack-plan.md
     │   ├── glm-provider-implementation-plan.md
@@ -66,8 +69,6 @@ Generated on: 12/25/2025, 3:18:50 PM
     ├── server/
     │   └── .env
     ├── skills/
-    │   ├── agent/
-    │   │   └── CleanCodeImplementer.md
     │   ├── beads/
     │   │   ├── references/
     │   │   │   ├── advanced_workflows.md

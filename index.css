@@ -17,6 +17,11 @@
     --glass-border: rgba(255, 255, 255, 0.1);
 
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+    /* Transition tokens */
+    --transition-duration: 0.3s;
+    --transition-easing: cubic-bezier(0.25, 0.8, 0.25, 1);
+    --bar-width-vertical: 60px;
 }
 
 html,
@@ -491,20 +496,67 @@ body {
 
 .floating-input-container {
     position: absolute;
-    bottom: 30px;
-    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
     z-index: 100;
     pointer-events: none;
+    transition: all var(--transition-duration) var(--transition-easing);
+}
+
+/* Bottom position (default) */
+.floating-input-container.bar-position-bottom {
+    bottom: 30px;
+    left: 0;
+    right: 0;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Left position */
+.floating-input-container.bar-position-left {
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: var(--bar-width-vertical);
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.floating-input-container.bar-position-left .input-wrapper {
+    flex-direction: column;
+    border-radius: 16px;
+    padding: 8px;
+    gap: 6px;
+    max-width: none;
+    align-items: center;
+}
+
+/* Right position */
+.floating-input-container.bar-position-right {
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: var(--bar-width-vertical);
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.floating-input-container.bar-position-right .input-wrapper {
+    flex-direction: column;
+    border-radius: 16px;
+    padding: 8px;
+    gap: 6px;
+    max-width: none;
+    align-items: center;
 }
 
 .input-wrapper {
     pointer-events: auto;
     width: 100%;
-    max-width: 1000px;
+    max-width: 750px;
     flex: 1;
     background: var(--input-bg);
     backdrop-filter: blur(16px);
@@ -514,8 +566,150 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
-    transition: all 0.3s;
+    transition: all var(--transition-duration) var(--transition-easing);
     overflow: hidden;
+}
+
+/* Pin control button styling */
+.pin-control-btn.active {
+    color: #3b82f6;
+}
+
+/* Open Popup Button (for all positions) */
+.open-popup-button {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 0;
+    border-radius: 12px;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all var(--transition-duration) var(--transition-easing);
+    flex-shrink: 0;
+}
+
+/* Bottom position - show label */
+.floating-input-container.bar-position-bottom .open-popup-button {
+    padding: 10px 20px;
+    font-size: 0.95rem;
+    min-width: fit-content;
+    white-space: nowrap;
+}
+
+/* Left/Right positions - icon only */
+.floating-input-container.bar-position-left .open-popup-button,
+.floating-input-container.bar-position-right .open-popup-button {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+}
+
+.open-popup-button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.05);
+}
+
+.open-popup-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Hide label on left/right, show on bottom */
+.floating-input-container.bar-position-left .popup-button-label,
+.floating-input-container.bar-position-right .popup-button-label {
+    display: none;
+}
+
+.floating-input-container.bar-position-bottom .popup-button-label {
+    display: inline;
+    font-weight: 500;
+}
+
+/* Compact side bar layout adjustments */
+.floating-input-container.bar-position-left .input-wrapper,
+.floating-input-container.bar-position-right .input-wrapper {
+    flex-wrap: nowrap;
+}
+
+.floating-input-container.bar-position-left .mini-mode-toggle,
+.floating-input-container.bar-position-right .mini-mode-toggle {
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    padding: 12px;
+    font-size: 1.2rem;
+}
+
+/* Hide selects on vertical bar - REMOVED - now showing all controls */
+/* Provider and model selects - show on vertical bar */
+.floating-input-container.bar-position-left .provider-select-control,
+.floating-input-container.bar-position-right .provider-select-control,
+.floating-input-container.bar-position-left .model-select-control,
+.floating-input-container.bar-position-right .model-select-control {
+    width: 100%;
+    border-left: none;
+    padding: 8px 4px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.floating-input-container.bar-position-left .provider-select,
+.floating-input-container.bar-position-right .provider-select,
+.floating-input-container.bar-position-left .model-select,
+.floating-input-container.bar-position-right .model-select {
+    width: 100%;
+    font-size: 0.7rem;
+    padding: 6px 4px;
+    text-align: center;
+}
+
+/* Generation count control - show on vertical bar */
+.floating-input-container.bar-position-left .generation-count-control,
+.floating-input-container.bar-position-right .generation-count-control {
+    width: 100%;
+    border-left: none;
+    padding: 8px 4px;
+    margin: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.floating-input-container.bar-position-left .generation-slider,
+.floating-input-container.bar-position-right .generation-slider {
+    width: 100%;
+    margin: 0;
+}
+
+.floating-input-container.bar-position-left .generation-count-label,
+.floating-input-container.bar-position-right .generation-count-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Vertical divider between icon groups */
+.floating-input-container.bar-position-left .mini-mode-toggle:not(:last-child),
+.floating-input-container.bar-position-right .mini-mode-toggle:not(:last-child) {
+    position: relative;
+}
+
+.floating-input-container.bar-position-left .mini-mode-toggle:not(:last-child):after,
+.floating-input-container.bar-position-right .mini-mode-toggle:not(:last-child):after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 1px;
+    background: var(--border-color);
 }
 
 .input-wrapper input {
@@ -1438,6 +1632,51 @@ body {
         width: 95vw;
         height: 70vh;
     }
+
+    /* Responsive bar adjustments */
+    :root {
+        --bar-width-vertical: 60px;
+    }
+
+    .floating-input-container.bar-position-left,
+    .floating-input-container.bar-position-right {
+        left: 10px;
+        right: auto;
+        width: var(--bar-width-vertical);
+    }
+
+    .floating-input-container.bar-position-right {
+        left: auto;
+        right: 10px;
+    }
+
+    .floating-input-container.bar-position-left .input-wrapper,
+    .floating-input-container.bar-position-right .input-wrapper {
+        max-width: none;
+    }
+
+    /* Simplify controls on mobile for bottom bar */
+    .floating-input-container.bar-position-bottom .input-wrapper {
+        max-width: 95vw;
+        gap: 8px;
+        padding: 8px;
+    }
+
+    .floating-input-container.bar-position-bottom .mini-mode-toggle {
+        font-size: 1rem;
+        padding: 6px;
+    }
+
+    /* Compact "Write Prompt" button on mobile */
+    .floating-input-container.bar-position-bottom .open-popup-button {
+        padding: 8px 14px;
+        font-size: 0.85rem;
+    }
+
+    .floating-input-container.bar-position-bottom .generation-count-control,
+    .floating-input-container.bar-position-bottom .model-select-control {
+        display: none;
+    }
 }
 
 /* ========================================
@@ -1955,4 +2194,85 @@ body {
     background: var(--border-color);
     color: var(--text-secondary);
     cursor: not-allowed;
+}
+
+/* ========================================
+   BAR REVEAL HANDLE
+   ======================================== */
+.bar-reveal-handle {
+    position: fixed;
+    background: var(--input-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    padding: 12px;
+    cursor: pointer;
+    z-index: 99;
+    transition: all var(--transition-duration) var(--transition-easing);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.bar-reveal-handle:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(1.05);
+}
+
+.bar-reveal-handle.bar-position-bottom {
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    padding: 10px 16px;
+    animation: slideUpReveal var(--transition-duration) var(--transition-easing);
+}
+
+.bar-reveal-handle.bar-position-left {
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-radius: 0 12px 12px 0;
+    padding: 14px 8px;
+    animation: slideRightReveal var(--transition-duration) var(--transition-easing);
+}
+
+.bar-reveal-handle.bar-position-right {
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-radius: 12px 0 0 12px;
+    padding: 14px 8px;
+    animation: slideLeftReveal var(--transition-duration) var(--transition-easing);
+}
+
+@keyframes slideUpReveal {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+@keyframes slideRightReveal {
+    from {
+        opacity: 0;
+        transform: translateY(-50%) translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(-50%) translateX(0);
+    }
+}
+
+@keyframes slideLeftReveal {
+    from {
+        opacity: 0;
+        transform: translateY(-50%) translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(-50%) translateX(0);
+    }
 }

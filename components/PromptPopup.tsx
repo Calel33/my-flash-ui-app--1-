@@ -89,6 +89,7 @@ export default function PromptPopup({
             className="prompt-popup-send"
             onClick={onSend}
             disabled={isLoading || !value.trim()}
+            aria-label="Send prompt"
           >
             <ArrowUpIcon />
           </button>

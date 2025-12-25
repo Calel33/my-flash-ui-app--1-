@@ -32,6 +32,7 @@ import {
 } from './ai/generate';
 
 type ModelId = string;
+type BarPosition = 'bottom' | 'left' | 'right';
 
 import DottedGlowBackground from './components/DottedGlowBackground';
 import GlmLoadingIndicator from './components/GlmLoadingIndicator';
@@ -57,7 +58,13 @@ import {
     LibraryIcon,
     SaveIcon,
     TrashIcon,
-    UploadIcon
+    UploadIcon,
+    PinBottomIcon,
+    PinLeftIcon,
+    PinRightIcon,
+    EyeOffIcon,
+    EyeIcon,
+    EditIcon
 } from './components/Icons';
 
 function App() {
@@ -105,6 +112,16 @@ function App() {
     const [isArtifactFullscreen, setIsArtifactFullscreen] = useState<boolean>(false);
 
     const [isPromptPopupOpen, setIsPromptPopupOpen] = useState<boolean>(false);
+
+    // Bar position and visibility state
+    const [barPosition, setBarPosition] = useState<BarPosition>(() => {
+        const saved = localStorage.getItem('flash_ui_bar_position');
+        return (saved === 'left' || saved === 'right' || saved === 'bottom') ? saved : 'bottom';
+    });
+    const [isBarHidden, setIsBarHidden] = useState<boolean>(() => {
+        const saved = localStorage.getItem('flash_ui_bar_hidden');
+        return saved === 'true';
+    });
 
     const [drawerState, setDrawerState] = useState<{
         isOpen: boolean;
@@ -163,6 +180,15 @@ function App() {
     useEffect(() => {
         localStorage.setItem('flash_ui_design_system_model', designSystemModel);
     }, [designSystemModel]);
+
+    // Persist bar position and visibility
+    useEffect(() => {
+        localStorage.setItem('flash_ui_bar_position', barPosition);
+    }, [barPosition]);
+
+    useEffect(() => {
+        localStorage.setItem('flash_ui_bar_hidden', isBarHidden.toString());
+    }, [isBarHidden]);
 
     useEffect(() => {
         inputRef.current?.focus();
@@ -829,13 +855,37 @@ function App() {
                     </div>
                     {selectorMode && <div className="selector-tip">{selectorMode === 'edit' ? 'Click any element to edit its styles.' : 'Click any element to extract it as a component.'}</div>}
                 </div>
-                <div className="floating-input-container">
+                {!isBarHidden && (
+                <div className={`floating-input-container bar-position-${barPosition}`}>
                     {activeSystem && (
                         <div className="active-context-badge" onClick={() => setActiveSystem(null)}>
                             🎯 Brand: <strong>{activeSystem.name}</strong> <span className="clear-ctx">&times;</span>
                         </div>
                     )}
                     <div className={`input-wrapper ${isLoading ? 'loading' : ''} ${isDesignSystemMode ? 'design-system-active' : ''}`}>
+                        <button 
+                            className="mini-mode-toggle pin-control-btn" 
+                            title="Bar Position" 
+                            onClick={() => {
+                                const positions: BarPosition[] = ['bottom', 'left', 'right'];
+                                const currentIndex = positions.indexOf(barPosition);
+                                const nextIndex = (currentIndex + 1) % positions.length;
+                                setBarPosition(positions[nextIndex]);
+                            }}
+                            aria-label={`Change bar position (current: ${barPosition})`}
+                        >
+                            {barPosition === 'bottom' && <PinBottomIcon />}
+                            {barPosition === 'left' && <PinLeftIcon />}
+                            {barPosition === 'right' && <PinRightIcon />}
+                        </button>
+                        <button 
+                            className="mini-mode-toggle" 
+                            title="Hide Bar" 
+                            onClick={() => setIsBarHidden(true)}
+                            aria-label="Hide prompt bar"
+                        >
+                            <EyeOffIcon />
+                        </button>
                         <button className={`mini-mode-toggle ${isDesignSystemMode ? 'active' : ''}`} title="Design System Mode" onClick={() => setIsDesignSystemMode(!isDesignSystemMode)}><PaletteIcon /></button>
                         <button className="mini-mode-toggle" title="My Creative Library" onClick={handleShowLibrary}><LibraryIcon /></button>
                         <button className="mini-mode-toggle" title="Import HTML Design" onClick={handleShowImport}><UploadIcon /></button>
@@ -882,30 +932,32 @@ function App() {
                             </select>
                         </div>
                         {!isLoading ? (
-                            !isPromptPopupOpen ? (
-                                <textarea
-                                    ref={inputRef}
-                                    rows={1}
-                                    value={inputValue}
-                                    placeholder={isDesignSystemMode ? "Describe brand architecture..." : "Describe a UI component..."}
-                                    onChange={handleInputChange}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                                            handleSendMessage();
-                                        }
-                                    }}
-                                    className="prompt-inline-textarea"
-                                />
-                            ) : (
-                                <div className="input-popup-active-label">Editing prompt in popup…</div>
-                            )
+                            <button 
+                                className="open-popup-button" 
+                                onClick={() => setIsPromptPopupOpen(true)}
+                                disabled={isLoading}
+                                aria-label="Open prompt editor"
+                                title="Write prompt"
+                            >
+                                <EditIcon />
+                                {barPosition === 'bottom' && <span className="popup-button-label">Write Prompt</span>}
+                            </button>
                         ) : (
                             <div className="input-generating-label"><span className="generating-prompt-text">{currentSession?.prompt}</span><ThinkingIcon /></div>
                         )}
-                        <button className="send-button" onClick={() => handleSendMessage()} disabled={isLoading || !inputValue.trim() || isPromptPopupOpen}><ArrowUpIcon /></button>
                     </div>
                 </div>
+                )}
+                {isBarHidden && (
+                <button 
+                    className={`bar-reveal-handle bar-position-${barPosition}`}
+                    onClick={() => setIsBarHidden(false)}
+                    aria-label="Show prompt bar"
+                    title="Show prompt bar"
+                >
+                    <EyeIcon />
+                </button>
+                )}
                 <PromptPopup
                     isOpen={isPromptPopupOpen}
                     value={inputValue}
