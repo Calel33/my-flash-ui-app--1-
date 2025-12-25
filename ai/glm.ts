@@ -8,7 +8,7 @@
  * Wraps z.ai GLM via OpenAI-compatible SDK for use with the provider facade.
  */
 
-import { glmClient, isGlmConfigured } from './glmClient';
+import { getGlmClient, isGlmConfigured } from './glmClient';
 import type OpenAI from 'openai';
 import type {
   GenerateStylesOptions,
@@ -53,6 +53,8 @@ async function* iterateStream(
  */
 export async function glmGenerateStyles(options: GenerateStylesOptions): Promise<string[]> {
   const { prompt, isDesignSystemMode = false } = options;
+
+  const glmClient = getGlmClient();
 
   const systemPrompt = 'You are a UI design director returning ONLY JSON arrays of style names. No explanations, no markdown, just the raw JSON array.';
 
@@ -99,6 +101,8 @@ export async function* glmStreamHtmlArtifact(
 ): AsyncGenerator<string, void, unknown> {
   const { prompt, modelId = DEFAULT_GLM_MODEL } = options;
 
+  const glmClient = getGlmClient();
+
   const systemPrompt = 'You output ONLY raw HTML+CSS without markdown code fences or explanations. Start directly with <!DOCTYPE html> or <html>.';
 
   const stream = await glmClient.chat.completions.create({
@@ -126,6 +130,8 @@ export async function* glmStreamReactComponent(
   options: StreamReactComponentOptions
 ): AsyncGenerator<string, void, unknown> {
   const { html, modelId = DEFAULT_GLM_MODEL } = options;
+
+  const glmClient = getGlmClient();
 
   const systemPrompt = 'You are an expert React developer. Output ONLY the React component code without markdown code fences. No explanations.';
 
@@ -156,6 +162,8 @@ export async function* glmStreamSnippetExtraction(
   options: StreamSnippetExtractionOptions
 ): AsyncGenerator<string, void, unknown> {
   const { snippetHtml, documentHtml } = options;
+
+  const glmClient = getGlmClient();
 
   const systemPrompt = 'You extract HTML elements into standalone files. Output ONLY raw HTML without markdown code fences.';
 
@@ -200,6 +208,8 @@ export async function* glmStreamSnippetToReact(
 ): AsyncGenerator<string, void, unknown> {
   const { snippetHtml, modelId = DEFAULT_GLM_MODEL } = options;
 
+  const glmClient = getGlmClient();
+
   const systemPrompt = 'You are an expert React developer. Output ONLY the React component code without markdown code fences. No explanations.';
 
   const userPrompt = `
@@ -238,6 +248,8 @@ export async function* glmStreamVariations(
   options: StreamVariationsOptions
 ): AsyncGenerator<string, void, unknown> {
   const { prompt, temperature = 1.2 } = options;
+
+  const glmClient = getGlmClient();
 
   const systemPrompt = 'You are a creative UI designer. Output ONLY valid JSON without markdown code fences.';
 
