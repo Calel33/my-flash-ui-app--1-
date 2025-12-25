@@ -13,14 +13,17 @@ import ReactDOM from 'react-dom/client';
 import { Artifact, Session, ComponentVariation, LayoutOption, LibraryItem } from './types';
 import { INITIAL_PLACEHOLDERS } from './constants';
 import { generateId, slugifyName, ImportedDesignData, createArtifactFromImport, createLibraryItemFromImport } from './utils';
+import { 
+    MODELS, 
+    getComponentModels, 
+    getDesignSystemModels,
+    type ProviderId 
+} from './ai/providers';
 
-// Available Gemini models
-const AVAILABLE_MODELS = [
-    { id: 'gemini-3-flash-preview', name: 'Flash (Faster)', description: 'Higher rate limits, good for components' },
-    { id: 'gemini-3-pro-preview', name: 'Pro (Smarter)', description: 'Lower rate limits, better for complex systems' },
-] as const;
+// Derive available models from the unified registry (gemini only for now, provider switch in Stack 5)
+const AVAILABLE_MODELS = MODELS.filter(m => m.provider === 'gemini');
 
-type ModelId = typeof AVAILABLE_MODELS[number]['id'];
+type ModelId = string;
 
 import DottedGlowBackground from './components/DottedGlowBackground';
 import ArtifactCard from './components/ArtifactCard';
