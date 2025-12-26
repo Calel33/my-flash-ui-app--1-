@@ -842,8 +842,7 @@ function App() {
                     >
                         {areActionsVisible ? <ChevronDownIcon /> : <ChevronUpIcon />}
                     </button>
-                    {areActionsVisible && (
-                    <div className="action-buttons">
+                    <div className={`action-buttons ${areActionsVisible ? '' : 'hidden'}`}>
                         <button onClick={() => { setFocusedArtifactIndex(null); setSelectorMode(false); }}><GridIcon /> Grid View</button>
                         {focusedArtifactIndex !== null && (
                             <button
@@ -861,7 +860,6 @@ function App() {
                         <button onClick={handleShowAgentPrompt}><BrainIcon /> Agent Logic</button>
                         <button onClick={handleShowCode}><CodeIcon /> HTML/CSS</button>
                     </div>
-                    )}
                     {selectorMode && <div className="selector-tip">{selectorMode === 'edit' ? 'Click any element to edit its styles.' : 'Click any element to extract it as a component.'}</div>}
                 </div>
                 {!isBarHidden && (
