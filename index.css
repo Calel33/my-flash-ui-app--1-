@@ -471,10 +471,36 @@ body {
     transform: translateY(0);
 }
 
+.action-bar-toggle {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--radius-pill);
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-duration) var(--transition-easing);
+    pointer-events: auto;
+    min-width: 40px;
+    min-height: 32px;
+}
+
+.action-bar-toggle:hover {
+    background: var(--glass-overlay-strong);
+    transform: translateY(-2px);
+}
+
 .action-buttons {
     display: flex;
     gap: var(--spacing-md);
     pointer-events: auto;
+    opacity: 1;
+    max-height: 500px;
+    transition: opacity var(--transition-duration) var(--transition-easing), 
+                max-height var(--transition-duration) var(--transition-easing);
 }
 
 .action-buttons button {

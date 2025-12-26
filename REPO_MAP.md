@@ -1,6 +1,6 @@
 # Repository Map
 
-Generated on: 12/25/2025, 3:36:30 PM
+Generated on: 12/25/2025, 9:31:36 PM
 
 ```text
 └── my-flash-ui-app (1)/
@@ -61,7 +61,10 @@ Generated on: 12/25/2025, 3:36:30 PM
     │   ├── 002-add-glm-provider-research.md
     │   ├── 003-glm-loading-indicator.md
     │   ├── 004-artifacts-fullscreen-input-popup.md
-    │   └── 005-expanded-prompt-input-caret.md
+    │   ├── 005-expanded-prompt-input-caret.md
+    │   ├── 006-pin-bottom-bar-micro-interactions.md
+    │   ├── 007-fix-design-system-duplicate-refs.md
+    │   └── 008-css-design-tokens-and-accessibility.md
     ├── research/
     │   ├── glm-provider-diff-stack-plan.md
     │   ├── glm-provider-implementation-plan.md

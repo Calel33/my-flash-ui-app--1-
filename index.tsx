@@ -48,6 +48,8 @@ import {
     ArrowLeftIcon,
     ArrowRightIcon,
     ArrowUpIcon,
+    ChevronUpIcon,
+    ChevronDownIcon,
     GridIcon,
     ReactIcon,
     CopyIcon,
@@ -122,6 +124,7 @@ function App() {
         const saved = localStorage.getItem('flash_ui_bar_hidden');
         return saved === 'true';
     });
+    const [areActionsVisible, setAreActionsVisible] = useState<boolean>(true);
 
     const [drawerState, setDrawerState] = useState<{
         isOpen: boolean;
@@ -830,7 +833,16 @@ function App() {
                 {canGoBack && <button className="nav-handle left" onClick={prevItem}><ArrowLeftIcon /></button>}
                 {canGoForward && <button className="nav-handle right" onClick={nextItem}><ArrowRightIcon /></button>}
                 <div className={`action-bar ${focusedArtifactIndex !== null ? 'visible' : ''}`}>
-                    <div className="active-prompt-label">{currentSession?.prompt}</div>
+                    <button 
+                        className="action-bar-toggle" 
+                        onClick={() => setAreActionsVisible(!areActionsVisible)}
+                        aria-label={areActionsVisible ? 'Hide action buttons' : 'Show action buttons'}
+                        aria-expanded={areActionsVisible}
+                        title={areActionsVisible ? 'Hide buttons' : 'Show buttons'}
+                    >
+                        {areActionsVisible ? <ChevronDownIcon /> : <ChevronUpIcon />}
+                    </button>
+                    {areActionsVisible && (
                     <div className="action-buttons">
                         <button onClick={() => { setFocusedArtifactIndex(null); setSelectorMode(false); }}><GridIcon /> Grid View</button>
                         {focusedArtifactIndex !== null && (
@@ -849,6 +861,7 @@ function App() {
                         <button onClick={handleShowAgentPrompt}><BrainIcon /> Agent Logic</button>
                         <button onClick={handleShowCode}><CodeIcon /> HTML/CSS</button>
                     </div>
+                    )}
                     {selectorMode && <div className="selector-tip">{selectorMode === 'edit' ? 'Click any element to edit its styles.' : 'Click any element to extract it as a component.'}</div>}
                 </div>
                 {!isBarHidden && (
@@ -939,7 +952,7 @@ function App() {
                                 {barPosition === 'bottom' && <span className="popup-button-label">Write Prompt</span>}
                             </button>
                         ) : (
-                            <div className="input-generating-label"><span className="generating-prompt-text">{currentSession?.prompt}</span><ThinkingIcon /></div>
+                            <div className="input-generating-label" aria-label="Generating"><ThinkingIcon /></div>
                         )}
                     </div>
                 </div>
