@@ -49,6 +49,9 @@
 
     /* Motion */
     --scale-hover: 1.05;
+
+    /* Action Bar */
+    --action-buttons-max-height: 500px;
 }
 
 html,
@@ -498,9 +501,16 @@ body {
     gap: var(--spacing-md);
     pointer-events: auto;
     opacity: 1;
-    max-height: 500px;
+    max-height: var(--action-buttons-max-height);
     transition: opacity var(--transition-duration) var(--transition-easing), 
                 max-height var(--transition-duration) var(--transition-easing);
+}
+
+.action-buttons.hidden {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    pointer-events: none;
 }
 
 .action-buttons button {
@@ -555,7 +565,11 @@ body {
     gap: var(--spacing-sm);
     z-index: 100;
     pointer-events: none;
-    transition: all var(--transition-duration) var(--transition-easing);
+    transition: left var(--transition-duration) var(--transition-easing),
+                right var(--transition-duration) var(--transition-easing),
+                top var(--transition-duration) var(--transition-easing),
+                bottom var(--transition-duration) var(--transition-easing),
+                opacity var(--transition-duration) var(--transition-easing);
 }
 
 /* Bottom position (default) */
@@ -619,7 +633,10 @@ body {
     display: flex;
     align-items: center;
     gap: var(--spacing-md);
-    transition: all var(--transition-duration) var(--transition-easing);
+    transition: background var(--transition-duration) var(--transition-easing),
+                border-color var(--transition-duration) var(--transition-easing),
+                opacity var(--transition-duration) var(--transition-easing),
+                transform var(--transition-duration) var(--transition-easing);
     overflow: hidden;
 }
 
