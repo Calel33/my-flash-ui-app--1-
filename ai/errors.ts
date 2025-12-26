@@ -237,16 +237,17 @@ export function createStreamTimeout(
 // ============================================================================
 
 /**
- * Feature flag for enabling GLM→Gemini fallback.
+ * Feature flag for enabling non-Gemini→Gemini fallback.
  * Can be controlled via environment variable.
  */
 export const ENABLE_FALLBACK = import.meta.env.VITE_ENABLE_PROVIDER_FALLBACK !== 'false';
 
 /**
  * Check if fallback should be attempted for this error.
+ * Fallback is supported from GLM or OpenRouter to Gemini on transient errors.
  */
 export function shouldAttemptFallback(error: AIProviderError): boolean {
   if (!ENABLE_FALLBACK) return false;
-  if (error.provider !== 'glm') return false; // Only fallback from GLM to Gemini
+  if (error.provider === 'gemini') return false; // Cannot fallback from Gemini
   return error.isTransient;
 }

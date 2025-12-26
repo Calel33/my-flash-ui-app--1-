@@ -83,7 +83,7 @@ function App() {
     // Provider state (D13)
     const [provider, setProvider] = useState<ProviderId>(() => {
         const saved = localStorage.getItem('flash_ui_provider');
-        if (saved === 'gemini' || saved === 'glm') {
+        if (saved === 'gemini' || saved === 'glm' || saved === 'openrouter' || saved === 'megallm') {
             return saved;
         }
         return 'gemini';
@@ -905,6 +905,8 @@ function App() {
                             >
                                 <option value="gemini">Gemini</option>
                                 <option value="glm">GLM</option>
+                                <option value="openrouter">OpenRouter</option>
+                                <option value="megallm">MegaLLM</option>
                             </select>
                         </div>
                         <div className="generation-count-control" title="Number of concurrent generations">

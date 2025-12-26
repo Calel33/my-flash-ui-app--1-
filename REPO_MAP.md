@@ -1,6 +1,6 @@
 # Repository Map
 
-Generated on: 12/25/2025, 9:31:36 PM
+Generated on: 12/25/2025, 11:49:26 PM
 
 ```text
 └── my-flash-ui-app (1)/
@@ -64,11 +64,16 @@ Generated on: 12/25/2025, 9:31:36 PM
     │   ├── 005-expanded-prompt-input-caret.md
     │   ├── 006-pin-bottom-bar-micro-interactions.md
     │   ├── 007-fix-design-system-duplicate-refs.md
-    │   └── 008-css-design-tokens-and-accessibility.md
+    │   ├── 008-css-design-tokens-and-accessibility.md
+    │   ├── 009-action-bar-toggle-and-prompt-cleanup.md
+    │   ├── 010-openrouter-provider-research.md
+    │   └── 011-openrouter-implementation-plan.md
     ├── research/
     │   ├── glm-provider-diff-stack-plan.md
     │   ├── glm-provider-implementation-plan.md
-    │   └── glm-provider-integration.md
+    │   ├── glm-provider-integration.md
+    │   ├── openrouter-implementation-plan.md
+    │   └── openrouter-provider-integration.md
     ├── server/
     │   └── .env
     ├── skills/
