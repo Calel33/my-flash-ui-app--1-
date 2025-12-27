@@ -8,6 +8,8 @@
  * Calls backend proxy endpoints for secure API access.
  */
 
+import { parseSSEStream } from './sseParser';
+
 // =============================================================================
 // Proxy API Helpers
 // =============================================================================
@@ -37,10 +39,16 @@ export async function checkGeminiConfigured(): Promise<boolean> {
 }
 
 /**
- * Legacy sync check - returns true since we can't know without async call.
+ * @deprecated This function always returns true and provides no meaningful check.
  * Use checkGeminiConfigured() for accurate async check.
  */
 export function isGeminiConfigured(): boolean {
+  if (import.meta.env.DEV) {
+    console.warn(
+      '[DEPRECATED] isGeminiConfigured() always returns true. ' +
+      'Use checkGeminiConfigured() for accurate async check.'
+    );
+  }
   return true;
 }
 
@@ -62,34 +70,7 @@ async function* streamFromProxy(
     throw new Error(error.error || 'Proxy request failed');
   }
 
-  const reader = response.body?.getReader();
-  if (!reader) throw new Error('No response body');
-
-  const decoder = new TextDecoder();
-  let buffer = '';
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() ?? '';
-
-    for (const line of lines) {
-      if (line.startsWith('data: ')) {
-        const data = line.slice(6);
-        if (data === '[DONE]') return;
-        try {
-          const parsed = JSON.parse(data);
-          if (parsed.chunk) yield parsed.chunk;
-          if (parsed.error) throw new Error(parsed.error);
-        } catch {
-          // Skip malformed chunks
-        }
-      }
-    }
-  }
+  yield* parseSSEStream(response);
 }
 
 /**
