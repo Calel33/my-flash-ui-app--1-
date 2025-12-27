@@ -1,6 +1,6 @@
 # Repository Map
 
-Generated on: 12/26/2025, 4:35:21 PM
+Generated on: 12/26/2025, 9:47:41 PM
 
 ```text
 └── my-flash-ui-app (1)/
@@ -105,6 +105,12 @@ Generated on: 12/26/2025, 4:35:21 PM
     │   ├── glm-provider-diff-stack-plan.md
     │   ├── glm-provider-implementation-plan.md
     │   └── glm-provider-integration.md
+    ├── server/
+    │   ├── .env
+    │   ├── .env.example
+    │   ├── package.json
+    │   ├── proxy.ts
+    │   └── tsconfig.json
     ├── skills/
     │   ├── beads/
     │   │   ├── references/

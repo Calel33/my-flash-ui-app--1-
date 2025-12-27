@@ -238,10 +238,10 @@ export function createStreamTimeout(
 
 /**
  * Feature flag for enabling GLM→Gemini fallback.
- * Defaults to true. Can be disabled via localStorage in dev.
+ * Defaults to true. Can be toggled via localStorage in dev.
  */
-export const ENABLE_FALLBACK = typeof localStorage !== 'undefined' 
-  ? localStorage.getItem('disableProviderFallback') !== 'true'
+export const ENABLE_FALLBACK = typeof localStorage !== 'undefined'
+  ? localStorage.getItem('enableProviderFallback') !== 'false'
   : true;
 
 /**

@@ -158,18 +158,22 @@ app.post('/api/gemini/stream', validateGeminiKey, async (req: Request, res: Resp
       config,
     });
 
+    let aborted = false;
     req.on('close', () => {
-      // Client disconnected - cleanup handled by stream iteration ending
+      aborted = true;
     });
 
     for await (const chunk of stream) {
+      if (aborted) break;
       const text = chunk.text;
       if (typeof text === 'string' && text) {
         sendSSEChunk(res, text);
       }
     }
 
-    sendSSEDone(res);
+    if (!aborted) {
+      sendSSEDone(res);
+    }
   } catch (error) {
     console.error('Gemini stream error:', error);
     if (!res.headersSent) {
@@ -236,18 +240,22 @@ app.post('/api/glm/stream', validateGlmKey, async (req: Request, res: Response) 
       stream: true,
     });
 
+    let aborted = false;
     req.on('close', () => {
-      // Client disconnected
+      aborted = true;
     });
 
     for await (const chunk of stream) {
+      if (aborted) break;
       const text = chunk.choices?.[0]?.delta?.content ?? '';
       if (text) {
         sendSSEChunk(res, text);
       }
     }
 
-    sendSSEDone(res);
+    if (!aborted) {
+      sendSSEDone(res);
+    }
   } catch (error) {
     console.error('GLM stream error:', error);
     if (!res.headersSent) {
