@@ -9,7 +9,7 @@
  */
 
 // Provider identifiers
-export type ProviderId = 'gemini' | 'glm';
+export type ProviderId = 'gemini' | 'glm' | 'openrouter';
 
 // Model capability kinds
 export type ModelKind = 'design' | 'component' | 'system';
@@ -60,6 +60,91 @@ export const MODELS: ProviderModel[] = [
     provider: 'glm',
     kind: 'component',
   },
+  // OpenRouter models
+  {
+    id: 'anthropic/claude-3.5-sonnet',
+    name: 'Claude 3.5 Sonnet',
+    description: 'Best balance of intelligence and speed',
+    provider: 'openrouter',
+    kind: 'design',
+  },
+  {
+    id: 'openai/gpt-4o',
+    name: 'GPT-4o',
+    description: 'OpenAI flagship multimodal model',
+    provider: 'openrouter',
+    kind: 'design',
+  },
+  {
+    id: 'google/gemini-2.0-flash-001',
+    name: 'Gemini 2.0 Flash',
+    description: 'Fast and capable Google model via OpenRouter',
+    provider: 'openrouter',
+    kind: 'component',
+  },
+  {
+    id: 'meta-llama/llama-3.3-70b-instruct',
+    name: 'Llama 3.3 70B',
+    description: 'Open-source high performance',
+    provider: 'openrouter',
+    kind: 'component',
+  },
+  {
+    id: 'minimax/minimax-m2.1',
+    name: 'MiniMax M2.1',
+    description: 'MiniMax flagship model',
+    provider: 'openrouter',
+    kind: 'design',
+  },
+  {
+    id: 'z-ai/glm-4.7',
+    name: 'GLM 4.7 (OpenRouter)',
+    description: 'Z.AI GLM via OpenRouter',
+    provider: 'openrouter',
+    kind: 'component',
+  },
+  {
+    id: 'google/gemini-3-flash-preview',
+    name: 'Gemini 3 Flash Preview',
+    description: 'Latest Gemini preview via OpenRouter',
+    provider: 'openrouter',
+    kind: 'component',
+  },
+  {
+    id: 'xiaomi/mimo-v2-flash:free',
+    name: 'MiMo V2 Flash (Free)',
+    description: 'Xiaomi free model',
+    provider: 'openrouter',
+    kind: 'component',
+  },
+  {
+    id: 'mistralai/devstral-2512:free',
+    name: 'Devstral (Free)',
+    description: 'Mistral coding model - free tier',
+    provider: 'openrouter',
+    kind: 'component',
+  },
+  {
+    id: 'mistralai/devstral-2512',
+    name: 'Devstral',
+    description: 'Mistral coding model',
+    provider: 'openrouter',
+    kind: 'component',
+  },
+  {
+    id: 'kwaipilot/kat-coder-pro:free',
+    name: 'KAT Coder Pro (Free)',
+    description: 'Kwai coding model - free tier',
+    provider: 'openrouter',
+    kind: 'component',
+  },
+  {
+    id: 'qwen/qwen3-coder:free',
+    name: 'Qwen3 Coder (Free)',
+    description: 'Alibaba coding model - free tier',
+    provider: 'openrouter',
+    kind: 'component',
+  },
 ];
 
 /**
@@ -79,6 +164,13 @@ export const PROVIDER_CONFIG: Record<ProviderId, ProviderConfig> = {
     name: 'Z.AI GLM',
     description: 'Z.AI GLM models via OpenAI-compatible API',
     envKey: 'ZAI_API_KEY',
+    isConfigured: () => true, // Check via /api/health at runtime
+  },
+  openrouter: {
+    id: 'openrouter',
+    name: 'OpenRouter',
+    description: '300+ AI models via unified API',
+    envKey: 'OPENROUTER_API_KEY',
     isConfigured: () => true, // Check via /api/health at runtime
   },
 };
