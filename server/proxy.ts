@@ -12,6 +12,7 @@ import { dirname, join } from 'path';
 import { GoogleGenAI } from '@google/genai';
 import OpenAI from 'openai';
 import { OpenRouter } from '@openrouter/sdk';
+import type { Message } from '@openrouter/sdk';
 
 // Load environment variables from server/.env with explicit path
 // Use override: true to ensure .env values take precedence over system env vars
@@ -40,6 +41,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const ZAI_API_KEY = process.env.ZAI_API_KEY;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const ZAI_BASE_URL = 'https://api.z.ai/api/paas/v4/';
+const HTTP_REFERER = process.env.HTTP_REFERER || 'http://localhost:3000';
 
 // Debug: Log API key presence (not the actual key for security)
 console.log('[DEBUG] OPENROUTER_API_KEY loaded:', OPENROUTER_API_KEY ? `${OPENROUTER_API_KEY.slice(0, 10)}...` : 'NOT FOUND');
@@ -99,7 +101,7 @@ function getOpenRouterClient(): OpenRouter {
     openrouterClient = new OpenRouter({
       apiKey: OPENROUTER_API_KEY,
       defaultHeaders: {
-        'HTTP-Referer': 'http://localhost:3000',
+        'HTTP-Referer': HTTP_REFERER,
         'X-Title': 'Flash UI App',
       },
     });
@@ -312,7 +314,7 @@ app.post('/api/glm/stream', validateGlmKey, async (req: Request, res: Response) 
 
 interface OpenRouterChatRequest {
   model: string;
-  messages: Array<{ role: string; content: string }>;
+  messages: Message[];
   temperature?: number;
 }
 
@@ -329,7 +331,7 @@ app.post('/api/openrouter/chat', validateOpenRouterKey, async (req: Request, res
     const client = getOpenRouterClient();
     const response = await client.chat.send({
       model,
-      messages: messages as any,
+      messages,
       temperature,
       stream: false,
     });
@@ -358,7 +360,7 @@ app.post('/api/openrouter/stream', validateOpenRouterKey, async (req: Request, r
     const client = getOpenRouterClient();
     const stream = await client.chat.send({
       model,
-      messages: messages as any,
+      messages,
       temperature,
       stream: true,
     });
