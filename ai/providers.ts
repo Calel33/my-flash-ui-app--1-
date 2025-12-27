@@ -64,21 +64,22 @@ export const MODELS: ProviderModel[] = [
 
 /**
  * Provider configuration registry.
+ * Configuration status is checked via proxy health endpoint at runtime.
  */
 export const PROVIDER_CONFIG: Record<ProviderId, ProviderConfig> = {
   gemini: {
     id: 'gemini',
     name: 'Google Gemini',
     description: 'Google AI models for generation',
-    envKey: 'API_KEY',
-    isConfigured: () => Boolean(process.env.API_KEY),
+    envKey: 'GEMINI_API_KEY',
+    isConfigured: () => true, // Check via /api/health at runtime
   },
   glm: {
     id: 'glm',
     name: 'Z.AI GLM',
     description: 'Z.AI GLM models via OpenAI-compatible API',
-    envKey: 'VITE_ZAI_API_KEY',
-    isConfigured: () => Boolean(import.meta.env.VITE_ZAI_API_KEY),
+    envKey: 'ZAI_API_KEY',
+    isConfigured: () => true, // Check via /api/health at runtime
   },
 };
 

@@ -5,11 +5,10 @@
 
 /**
  * GLM Provider Implementation
- * Wraps z.ai GLM via OpenAI-compatible SDK for use with the provider facade.
+ * Routes requests through backend proxy for secure API access.
  */
 
-import { getGlmClient, isGlmConfigured } from './glmClient';
-import type OpenAI from 'openai';
+import { isGlmConfigured, glmChatFromProxy, glmStreamFromProxy } from './glmClient';
 import type {
   GenerateStylesOptions,
   StreamHtmlArtifactOptions,
@@ -25,25 +24,6 @@ export { isGlmConfigured };
 const DEFAULT_GLM_MODEL = 'glm-4.7';
 
 // ============================================================================
-// Stream Iteration Helper
-// ============================================================================
-
-/**
- * Helper to iterate over OpenAI-compatible chat completion streams.
- * Extracts text content from each chunk and yields it.
- */
-async function* iterateStream(
-  stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>
-): AsyncGenerator<string, void, unknown> {
-  for await (const chunk of stream) {
-    const text = chunk.choices?.[0]?.delta?.content ?? '';
-    if (text) {
-      yield text;
-    }
-  }
-}
-
-// ============================================================================
 // Style Generation (Non-streaming)
 // ============================================================================
 
@@ -54,26 +34,22 @@ async function* iterateStream(
 export async function glmGenerateStyles(options: GenerateStylesOptions): Promise<string[]> {
   const { prompt, isDesignSystemMode = false } = options;
 
-  const glmClient = getGlmClient();
-
   const systemPrompt = 'You are a UI design director returning ONLY JSON arrays of style names. No explanations, no markdown, just the raw JSON array.';
 
   const userPrompt = isDesignSystemMode
     ? `Generate 3 distinct Brand Personalities for: "${prompt}". Return ONLY a raw JSON array of 3 names.`
     : `Generate 3 distinct design directions for: "${prompt}". Return ONLY a raw JSON array of 3 names.`;
 
-  const completion = await glmClient.chat.completions.create({
+  const raw = await glmChatFromProxy({
     model: DEFAULT_GLM_MODEL,
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ],
-    stream: false,
   });
 
   let generatedStyles = ['Style A', 'Style B', 'Style C'];
   try {
-    const raw = completion.choices[0]?.message?.content ?? '[]';
     const match = raw.match(/\[[\s\S]*\]/);
     if (match) {
       const parsed = JSON.parse(match[0]);
@@ -101,21 +77,16 @@ export async function* glmStreamHtmlArtifact(
 ): AsyncGenerator<string, void, unknown> {
   const { prompt, modelId = DEFAULT_GLM_MODEL } = options;
 
-  const glmClient = getGlmClient();
-
   const systemPrompt = 'You output ONLY raw HTML+CSS without markdown code fences or explanations. Start directly with <!DOCTYPE html> or <html>.';
 
-  const stream = await glmClient.chat.completions.create({
+  yield* glmStreamFromProxy({
     model: modelId,
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: prompt },
     ],
     temperature: 0.9,
-    stream: true,
   });
-
-  yield* iterateStream(stream);
 }
 
 // ============================================================================
@@ -131,23 +102,18 @@ export async function* glmStreamReactComponent(
 ): AsyncGenerator<string, void, unknown> {
   const { html, modelId = DEFAULT_GLM_MODEL } = options;
 
-  const glmClient = getGlmClient();
-
   const systemPrompt = 'You are an expert React developer. Output ONLY the React component code without markdown code fences. No explanations.';
 
   const userPrompt = `Convert the following high-fidelity HTML/CSS component into a production-ready React component. Return ONLY the code. No markdown.\n\nHTML:\n${html}`;
 
-  const stream = await glmClient.chat.completions.create({
+  yield* glmStreamFromProxy({
     model: modelId,
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ],
     temperature: 0.7,
-    stream: true,
   });
-
-  yield* iterateStream(stream);
 }
 
 // ============================================================================
@@ -162,8 +128,6 @@ export async function* glmStreamSnippetExtraction(
   options: StreamSnippetExtractionOptions
 ): AsyncGenerator<string, void, unknown> {
   const { snippetHtml, documentHtml } = options;
-
-  const glmClient = getGlmClient();
 
   const systemPrompt = 'You extract HTML elements into standalone files. Output ONLY raw HTML without markdown code fences.';
 
@@ -183,17 +147,14 @@ ${documentHtml}
 3. Return ONLY the code. No markdown.
 `.trim();
 
-  const stream = await glmClient.chat.completions.create({
+  yield* glmStreamFromProxy({
     model: DEFAULT_GLM_MODEL,
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ],
     temperature: 0.7,
-    stream: true,
   });
-
-  yield* iterateStream(stream);
 }
 
 // ============================================================================
@@ -208,8 +169,6 @@ export async function* glmStreamSnippetToReact(
 ): AsyncGenerator<string, void, unknown> {
   const { snippetHtml, modelId = DEFAULT_GLM_MODEL } = options;
 
-  const glmClient = getGlmClient();
-
   const systemPrompt = 'You are an expert React developer. Output ONLY the React component code without markdown code fences. No explanations.';
 
   const userPrompt = `
@@ -223,17 +182,14 @@ Snippet:
 ${snippetHtml}
 `.trim();
 
-  const stream = await glmClient.chat.completions.create({
+  yield* glmStreamFromProxy({
     model: modelId,
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ],
     temperature: 0.7,
-    stream: true,
   });
-
-  yield* iterateStream(stream);
 }
 
 // ============================================================================
@@ -249,8 +205,6 @@ export async function* glmStreamVariations(
 ): AsyncGenerator<string, void, unknown> {
   const { prompt, temperature = 1.2 } = options;
 
-  const glmClient = getGlmClient();
-
   const systemPrompt = 'You are a creative UI designer. Output ONLY valid JSON without markdown code fences.';
 
   const userPrompt = `
@@ -258,15 +212,12 @@ Generate 3 RADICAL CONCEPTUAL VARIATIONS of: "${prompt}".
 Required JSON Format: { "name": "Name", "html": "..." }
 `.trim();
 
-  const stream = await glmClient.chat.completions.create({
+  yield* glmStreamFromProxy({
     model: DEFAULT_GLM_MODEL,
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ],
     temperature,
-    stream: true,
   });
-
-  yield* iterateStream(stream);
 }

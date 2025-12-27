@@ -1,6 +1,6 @@
 # Repository Map
 
-Generated on: 12/25/2025, 9:31:36 PM
+Generated on: 12/26/2025, 4:35:21 PM
 
 ```text
 └── my-flash-ui-app (1)/
@@ -56,6 +56,40 @@ Generated on: 12/25/2025, 9:31:36 PM
     │   ├── ImportDesignPanel.tsx
     │   ├── PromptPopup.tsx
     │   └── SideDrawer.tsx
+    ├── docs/
+    │   ├── core/
+    │   │   ├── rules/
+    │   │   │   └── AGENTS.md
+    │   │   ├── API_REFERENCE.md
+    │   │   ├── ARCHITECTURE.md
+    │   │   ├── BUG_LOG.md
+    │   │   ├── DEVELOPMENT_GUIDE.md
+    │   │   ├── PRODUCT_BRIEF.md
+    │   │   ├── PROJECT_PROGRESS.md
+    │   │   └── USER_GUIDE.md
+    │   ├── Design-system/
+    │   ├── guides/
+    │   ├── memory/
+    │   │   ├── constitution_update_checklist.md
+    │   │   └── constitution.md
+    │   ├── project-files/
+    │   │   └── PRIME_CONTEXT.md
+    │   ├── sessions/
+    │   │   ├── endings/
+    │   │   ├── general/
+    │   │   │   └── SESSION_2025-10-08_INITIAL_SETUP.md
+    │   │   ├── handoffs/
+    │   │   ├── learnings/
+    │   │   └── pauses/
+    │   ├── tasks/
+    │   │   └── example-task/
+    │   │       ├── learnings/
+    │   │       ├── sessions/
+    │   │       ├── validation/
+    │   │       └── README.md
+    │   ├── AGENTS.md
+    │   ├── README.md
+    │   └── SESSION_LOG.md
     ├── prompts/
     │   ├── 001-import-design-html-uploads.md
     │   ├── 002-add-glm-provider-research.md
@@ -64,13 +98,13 @@ Generated on: 12/25/2025, 9:31:36 PM
     │   ├── 005-expanded-prompt-input-caret.md
     │   ├── 006-pin-bottom-bar-micro-interactions.md
     │   ├── 007-fix-design-system-duplicate-refs.md
-    │   └── 008-css-design-tokens-and-accessibility.md
+    │   ├── 008-css-design-tokens-and-accessibility.md
+    │   ├── 009-action-bar-toggle-and-prompt-cleanup.md
+    │   └── 010-backend-api-proxy-server.md
     ├── research/
     │   ├── glm-provider-diff-stack-plan.md
     │   ├── glm-provider-implementation-plan.md
     │   └── glm-provider-integration.md
-    ├── server/
-    │   └── .env
     ├── skills/
     │   ├── beads/
     │   │   ├── references/
@@ -140,10 +174,8 @@ Generated on: 12/25/2025, 9:31:36 PM
     │   └── map-generator/
     │       ├── generate.js
     │       └── README.md
-    ├── .env.local
     ├── .env.local.example
     ├── .gitignore
-    ├── AGENTS.md
     ├── constants.ts
     ├── index.css
     ├── index.html

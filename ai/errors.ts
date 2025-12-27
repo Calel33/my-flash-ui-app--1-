@@ -238,9 +238,11 @@ export function createStreamTimeout(
 
 /**
  * Feature flag for enabling GLM→Gemini fallback.
- * Can be controlled via environment variable.
+ * Defaults to true. Can be disabled via localStorage in dev.
  */
-export const ENABLE_FALLBACK = import.meta.env.VITE_ENABLE_PROVIDER_FALLBACK !== 'false';
+export const ENABLE_FALLBACK = typeof localStorage !== 'undefined' 
+  ? localStorage.getItem('disableProviderFallback') !== 'true'
+  : true;
 
 /**
  * Check if fallback should be attempted for this error.

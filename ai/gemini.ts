@@ -5,30 +5,110 @@
 
 /**
  * Gemini Provider Implementation
- * Wraps GoogleGenAI SDK for use with the provider facade.
+ * Calls backend proxy endpoints for secure API access.
  */
 
-import { GoogleGenAI } from '@google/genai';
+// =============================================================================
+// Proxy API Helpers
+// =============================================================================
 
-// Lazy-initialized Gemini client
-let geminiClient: GoogleGenAI | null = null;
+const PROXY_BASE = '/api/gemini';
 
-function getGeminiClient(): GoogleGenAI {
-  if (!geminiClient) {
-    const apiKey = process.env.API_KEY;
-    if (!apiKey) {
-      throw new Error('API_KEY is not configured.');
-    }
-    geminiClient = new GoogleGenAI({ apiKey });
-  }
-  return geminiClient;
+interface GeminiProxyRequest {
+  model: string;
+  contents: Array<{ role: string; parts: Array<{ text: string }> }>;
+  config?: {
+    temperature?: number;
+    thinkingConfig?: { thinkingBudget: number };
+  };
 }
 
 /**
- * Check if Gemini is configured.
+ * Check if Gemini is configured by calling the health endpoint.
+ */
+export async function checkGeminiConfigured(): Promise<boolean> {
+  try {
+    const res = await fetch('/api/health');
+    const data = await res.json();
+    return data.gemini === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Legacy sync check - returns true since we can't know without async call.
+ * Use checkGeminiConfigured() for accurate async check.
  */
 export function isGeminiConfigured(): boolean {
-  return Boolean(process.env.API_KEY);
+  return true;
+}
+
+/**
+ * Stream SSE response from proxy endpoint.
+ */
+async function* streamFromProxy(
+  endpoint: string,
+  body: GeminiProxyRequest
+): AsyncGenerator<string, void, unknown> {
+  const response = await fetch(`${PROXY_BASE}${endpoint}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(error.error || 'Proxy request failed');
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error('No response body');
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
+
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const data = line.slice(6);
+        if (data === '[DONE]') return;
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.chunk) yield parsed.chunk;
+          if (parsed.error) throw new Error(parsed.error);
+        } catch {
+          // Skip malformed chunks
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Make non-streaming request to proxy.
+ */
+async function generateFromProxy(body: GeminiProxyRequest): Promise<string> {
+  const response = await fetch(`${PROXY_BASE}/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(error.error || 'Proxy request failed');
+  }
+
+  const data = await response.json();
+  return data.text ?? '';
 }
 
 // ============================================================================
@@ -46,20 +126,19 @@ export interface GenerateStylesOptions {
  */
 export async function geminiGenerateStyles(options: GenerateStylesOptions): Promise<string[]> {
   const { prompt, isDesignSystemMode = false } = options;
-  const ai = getGeminiClient();
 
   const stylePrompt = isDesignSystemMode
     ? `Generate 3 distinct Brand Personalities for: "${prompt}". Return ONLY a raw JSON array of 3 names.`
     : `Generate 3 distinct design directions for: "${prompt}". Return ONLY a raw JSON array of 3 names.`;
 
-  const response = await ai.models.generateContent({
+  const text = await generateFromProxy({
     model: 'gemini-3-flash-preview',
-    contents: { role: 'user', parts: [{ text: stylePrompt }] },
+    contents: [{ role: 'user', parts: [{ text: stylePrompt }] }],
   });
 
   let generatedStyles = ['Style A', 'Style B', 'Style C'];
   try {
-    const match = response.text?.match(/\[[\s\S]*\]/);
+    const match = text.match(/\[[\s\S]*\]/);
     if (match) {
       generatedStyles = JSON.parse(match[0]);
     }
@@ -89,22 +168,14 @@ export async function* geminiStreamHtmlArtifact(
   options: StreamHtmlArtifactOptions
 ): AsyncGenerator<string, void, unknown> {
   const { prompt, modelId, useThinking = false, thinkingBudget = 8000 } = options;
-  const ai = getGeminiClient();
 
   const config = useThinking ? { thinkingConfig: { thinkingBudget } } : undefined;
 
-  const responseStream = await ai.models.generateContentStream({
+  yield* streamFromProxy('/stream', {
     model: modelId,
-    contents: [{ parts: [{ text: prompt }], role: 'user' }],
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config,
   });
-
-  for await (const chunk of responseStream) {
-    const text = chunk.text;
-    if (typeof text === 'string' && text) {
-      yield text;
-    }
-  }
 }
 
 // ============================================================================
@@ -125,22 +196,14 @@ export async function* geminiStreamReactComponent(
   options: StreamReactComponentOptions
 ): AsyncGenerator<string, void, unknown> {
   const { html, modelId, thinkingBudget = 8000 } = options;
-  const ai = getGeminiClient();
 
   const prompt = `Convert the following high-fidelity HTML/CSS component into a production-ready React component. Return ONLY the code. No markdown.\n\nHTML:\n${html}`;
 
-  const responseStream = await ai.models.generateContentStream({
+  yield* streamFromProxy('/stream', {
     model: modelId,
-    contents: [{ parts: [{ text: prompt }], role: 'user' }],
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config: { thinkingConfig: { thinkingBudget } },
   });
-
-  for await (const chunk of responseStream) {
-    const text = chunk.text;
-    if (typeof text === 'string' && text) {
-      yield text;
-    }
-  }
 }
 
 // ============================================================================
@@ -161,7 +224,6 @@ export async function* geminiStreamSnippetExtraction(
   options: StreamSnippetExtractionOptions
 ): AsyncGenerator<string, void, unknown> {
   const { snippetHtml, documentHtml, thinkingBudget = 4000 } = options;
-  const ai = getGeminiClient();
 
   const prompt = `
 I have a full HTML/CSS document and I've selected a specific element from it. 
@@ -179,18 +241,11 @@ ${documentHtml}
 3. Return ONLY the code. No markdown.
 `.trim();
 
-  const responseStream = await ai.models.generateContentStream({
+  yield* streamFromProxy('/stream', {
     model: 'gemini-3-flash-preview',
-    contents: [{ parts: [{ text: prompt }], role: 'user' }],
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config: { thinkingConfig: { thinkingBudget } },
   });
-
-  for await (const chunk of responseStream) {
-    const text = chunk.text;
-    if (typeof text === 'string' && text) {
-      yield text;
-    }
-  }
 }
 
 // ============================================================================
@@ -210,7 +265,6 @@ export async function* geminiStreamSnippetToReact(
   options: StreamSnippetToReactOptions
 ): AsyncGenerator<string, void, unknown> {
   const { snippetHtml, modelId, thinkingBudget = 6000 } = options;
-  const ai = getGeminiClient();
 
   const prompt = `
 Convert the following isolated HTML/CSS snippet into a clean, production-ready React functional component.
@@ -223,18 +277,11 @@ Snippet:
 ${snippetHtml}
 `.trim();
 
-  const responseStream = await ai.models.generateContentStream({
+  yield* streamFromProxy('/stream', {
     model: modelId,
-    contents: [{ parts: [{ text: prompt }], role: 'user' }],
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config: { thinkingConfig: { thinkingBudget } },
   });
-
-  for await (const chunk of responseStream) {
-    const text = chunk.text;
-    if (typeof text === 'string' && text) {
-      yield text;
-    }
-  }
 }
 
 // ============================================================================
@@ -254,23 +301,15 @@ export async function* geminiStreamVariations(
   options: StreamVariationsOptions
 ): AsyncGenerator<string, void, unknown> {
   const { prompt, temperature = 1.2 } = options;
-  const ai = getGeminiClient();
 
   const variationPrompt = `
 Generate 3 RADICAL CONCEPTUAL VARIATIONS of: "${prompt}".
 Required JSON Format: { "name": "Name", "html": "..." }
 `.trim();
 
-  const responseStream = await ai.models.generateContentStream({
+  yield* streamFromProxy('/stream', {
     model: 'gemini-3-flash-preview',
-    contents: [{ parts: [{ text: variationPrompt }], role: 'user' }],
+    contents: [{ role: 'user', parts: [{ text: variationPrompt }] }],
     config: { temperature },
   });
-
-  for await (const chunk of responseStream) {
-    const text = chunk.text;
-    if (typeof text === 'string' && text) {
-      yield text;
-    }
-  }
 }
