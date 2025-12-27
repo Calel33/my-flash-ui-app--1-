@@ -37,21 +37,19 @@ export async function checkOpenRouterConfigured(): Promise<boolean> {
 }
 
 /**
- * @deprecated Use checkOpenRouterConfigured() for accurate async check.
+ * OpenRouter message format matching SDK's Message type.
+ * Supports: system, user, developer, assistant, tool roles.
  */
-export function isOpenRouterConfigured(): boolean {
-  if (import.meta.env.DEV) {
-    console.warn(
-      '[DEPRECATED] isOpenRouterConfigured() always returns true. ' +
-      'Use checkOpenRouterConfigured() for accurate async check.'
-    );
-  }
-  return true;
+export interface OpenRouterMessage {
+  role: 'system' | 'user' | 'assistant' | 'developer' | 'tool';
+  content: string;
+  name?: string;
+  toolCallId?: string;
 }
 
 export interface OpenRouterChatRequest {
   model: string;
-  messages: Array<{ role: string; content: string }>;
+  messages: OpenRouterMessage[];
   temperature?: number;
 }
 
