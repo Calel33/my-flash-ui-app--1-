@@ -34,6 +34,14 @@ import {
   glmStreamVariations,
 } from './glm';
 import {
+  openrouterGenerateStyles,
+  openrouterStreamHtmlArtifact,
+  openrouterStreamReactComponent,
+  openrouterStreamSnippetExtraction,
+  openrouterStreamSnippetToReact,
+  openrouterStreamVariations,
+} from './openrouter';
+import {
   normalizeError,
   shouldAttemptFallback,
   withTimeout,
@@ -78,20 +86,30 @@ export interface FacadeStreamVariationsOptions extends StreamVariationsOptions {
 
 /**
  * Generate style directions using the specified provider.
- * Includes error normalization and optional GLM→Gemini fallback.
+ * Includes error normalization and optional GLM/OpenRouter→Gemini fallback.
  */
 export async function generateStyles(options: FacadeGenerateStylesOptions): Promise<string[]> {
   const { provider, ...rest } = options;
 
   try {
-    const generateFn = provider === 'glm' ? glmGenerateStyles : geminiGenerateStyles;
+    let generateFn;
+    switch (provider) {
+      case 'openrouter':
+        generateFn = openrouterGenerateStyles;
+        break;
+      case 'glm':
+        generateFn = glmGenerateStyles;
+        break;
+      default:
+        generateFn = geminiGenerateStyles;
+    }
     return await withTimeout(generateFn(rest), DEFAULT_REQUEST_TIMEOUT_MS, provider);
   } catch (error) {
     const normalizedError = normalizeError(error, provider);
 
-    // Attempt fallback to Gemini if GLM fails with a transient error
+    // Attempt fallback to Gemini if GLM/OpenRouter fails with a transient error
     if (shouldAttemptFallback(normalizedError) && isGeminiConfigured()) {
-      console.warn(`[Fallback] GLM failed, falling back to Gemini:`, normalizedError.message);
+      console.warn(`[Fallback] ${provider} failed, falling back to Gemini:`, normalizedError.message);
       try {
         return await withTimeout(geminiGenerateStyles(rest), DEFAULT_REQUEST_TIMEOUT_MS, 'gemini');
       } catch (fallbackError) {
@@ -105,7 +123,7 @@ export async function generateStyles(options: FacadeGenerateStylesOptions): Prom
 
 /**
  * Stream HTML artifact generation using the specified provider.
- * Includes error normalization and optional GLM→Gemini fallback.
+ * Includes error normalization and optional GLM/OpenRouter→Gemini fallback.
  */
 export async function* streamHtmlArtifact(
   options: FacadeStreamHtmlArtifactOptions
@@ -113,13 +131,23 @@ export async function* streamHtmlArtifact(
   const { provider, ...rest } = options;
 
   try {
-    const streamFn = provider === 'glm' ? glmStreamHtmlArtifact : geminiStreamHtmlArtifact;
+    let streamFn;
+    switch (provider) {
+      case 'openrouter':
+        streamFn = openrouterStreamHtmlArtifact;
+        break;
+      case 'glm':
+        streamFn = glmStreamHtmlArtifact;
+        break;
+      default:
+        streamFn = geminiStreamHtmlArtifact;
+    }
     yield* streamFn(rest);
   } catch (error) {
     const normalizedError = normalizeError(error, provider);
 
     if (shouldAttemptFallback(normalizedError) && isGeminiConfigured()) {
-      console.warn(`[Fallback] GLM streaming failed, falling back to Gemini:`, normalizedError.message);
+      console.warn(`[Fallback] ${provider} streaming failed, falling back to Gemini:`, normalizedError.message);
       try {
         yield* geminiStreamHtmlArtifact(rest);
         return;
@@ -134,7 +162,7 @@ export async function* streamHtmlArtifact(
 
 /**
  * Stream React component conversion using the specified provider.
- * Includes error normalization and optional GLM→Gemini fallback.
+ * Includes error normalization and optional GLM/OpenRouter→Gemini fallback.
  */
 export async function* streamReactComponent(
   options: FacadeStreamReactComponentOptions
@@ -142,13 +170,23 @@ export async function* streamReactComponent(
   const { provider, ...rest } = options;
 
   try {
-    const streamFn = provider === 'glm' ? glmStreamReactComponent : geminiStreamReactComponent;
+    let streamFn;
+    switch (provider) {
+      case 'openrouter':
+        streamFn = openrouterStreamReactComponent;
+        break;
+      case 'glm':
+        streamFn = glmStreamReactComponent;
+        break;
+      default:
+        streamFn = geminiStreamReactComponent;
+    }
     yield* streamFn(rest);
   } catch (error) {
     const normalizedError = normalizeError(error, provider);
 
     if (shouldAttemptFallback(normalizedError) && isGeminiConfigured()) {
-      console.warn(`[Fallback] GLM streaming failed, falling back to Gemini:`, normalizedError.message);
+      console.warn(`[Fallback] ${provider} streaming failed, falling back to Gemini:`, normalizedError.message);
       try {
         yield* geminiStreamReactComponent(rest);
         return;
@@ -163,7 +201,7 @@ export async function* streamReactComponent(
 
 /**
  * Stream snippet extraction using the specified provider.
- * Includes error normalization and optional GLM→Gemini fallback.
+ * Includes error normalization and optional GLM/OpenRouter→Gemini fallback.
  */
 export async function* streamSnippetExtraction(
   options: FacadeStreamSnippetExtractionOptions
@@ -171,13 +209,23 @@ export async function* streamSnippetExtraction(
   const { provider, ...rest } = options;
 
   try {
-    const streamFn = provider === 'glm' ? glmStreamSnippetExtraction : geminiStreamSnippetExtraction;
+    let streamFn;
+    switch (provider) {
+      case 'openrouter':
+        streamFn = openrouterStreamSnippetExtraction;
+        break;
+      case 'glm':
+        streamFn = glmStreamSnippetExtraction;
+        break;
+      default:
+        streamFn = geminiStreamSnippetExtraction;
+    }
     yield* streamFn(rest);
   } catch (error) {
     const normalizedError = normalizeError(error, provider);
 
     if (shouldAttemptFallback(normalizedError) && isGeminiConfigured()) {
-      console.warn(`[Fallback] GLM streaming failed, falling back to Gemini:`, normalizedError.message);
+      console.warn(`[Fallback] ${provider} streaming failed, falling back to Gemini:`, normalizedError.message);
       try {
         yield* geminiStreamSnippetExtraction(rest);
         return;
@@ -192,7 +240,7 @@ export async function* streamSnippetExtraction(
 
 /**
  * Stream snippet to React conversion using the specified provider.
- * Includes error normalization and optional GLM→Gemini fallback.
+ * Includes error normalization and optional GLM/OpenRouter→Gemini fallback.
  */
 export async function* streamSnippetToReact(
   options: FacadeStreamSnippetToReactOptions
@@ -200,13 +248,23 @@ export async function* streamSnippetToReact(
   const { provider, ...rest } = options;
 
   try {
-    const streamFn = provider === 'glm' ? glmStreamSnippetToReact : geminiStreamSnippetToReact;
+    let streamFn;
+    switch (provider) {
+      case 'openrouter':
+        streamFn = openrouterStreamSnippetToReact;
+        break;
+      case 'glm':
+        streamFn = glmStreamSnippetToReact;
+        break;
+      default:
+        streamFn = geminiStreamSnippetToReact;
+    }
     yield* streamFn(rest);
   } catch (error) {
     const normalizedError = normalizeError(error, provider);
 
     if (shouldAttemptFallback(normalizedError) && isGeminiConfigured()) {
-      console.warn(`[Fallback] GLM streaming failed, falling back to Gemini:`, normalizedError.message);
+      console.warn(`[Fallback] ${provider} streaming failed, falling back to Gemini:`, normalizedError.message);
       try {
         yield* geminiStreamSnippetToReact(rest);
         return;
@@ -221,7 +279,7 @@ export async function* streamSnippetToReact(
 
 /**
  * Stream variations generation using the specified provider.
- * Includes error normalization and optional GLM→Gemini fallback.
+ * Includes error normalization and optional GLM/OpenRouter→Gemini fallback.
  */
 export async function* streamVariations(
   options: FacadeStreamVariationsOptions
@@ -229,13 +287,23 @@ export async function* streamVariations(
   const { provider, ...rest } = options;
 
   try {
-    const streamFn = provider === 'glm' ? glmStreamVariations : geminiStreamVariations;
+    let streamFn;
+    switch (provider) {
+      case 'openrouter':
+        streamFn = openrouterStreamVariations;
+        break;
+      case 'glm':
+        streamFn = glmStreamVariations;
+        break;
+      default:
+        streamFn = geminiStreamVariations;
+    }
     yield* streamFn(rest);
   } catch (error) {
     const normalizedError = normalizeError(error, provider);
 
     if (shouldAttemptFallback(normalizedError) && isGeminiConfigured()) {
-      console.warn(`[Fallback] GLM streaming failed, falling back to Gemini:`, normalizedError.message);
+      console.warn(`[Fallback] ${provider} streaming failed, falling back to Gemini:`, normalizedError.message);
       try {
         yield* geminiStreamVariations(rest);
         return;

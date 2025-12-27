@@ -1,6 +1,6 @@
 # Repository Map
 
-Generated on: 12/26/2025, 9:47:41 PM
+Generated on: 12/26/2025, 11:18:08 PM
 
 ```text
 └── my-flash-ui-app (1)/
@@ -13,7 +13,8 @@ Generated on: 12/26/2025, 9:47:41 PM
     │   ├── glm.ts
     │   ├── glmClient.ts
     │   ├── glmSmokeTest.ts
-    │   └── providers.ts
+    │   ├── providers.ts
+    │   └── sseParser.ts
     ├── command/
     │   ├── Always.md
     │   ├── APP_ARCHITECTURE.md
@@ -100,11 +101,13 @@ Generated on: 12/26/2025, 9:47:41 PM
     │   ├── 007-fix-design-system-duplicate-refs.md
     │   ├── 008-css-design-tokens-and-accessibility.md
     │   ├── 009-action-bar-toggle-and-prompt-cleanup.md
-    │   └── 010-backend-api-proxy-server.md
+    │   ├── 010-backend-api-proxy-server.md
+    │   └── 011-openrouter-provider-research.md
     ├── research/
     │   ├── glm-provider-diff-stack-plan.md
     │   ├── glm-provider-implementation-plan.md
-    │   └── glm-provider-integration.md
+    │   ├── glm-provider-integration.md
+    │   └── openrouter-provider-integration.md
     ├── server/
     │   ├── .env
     │   ├── .env.example

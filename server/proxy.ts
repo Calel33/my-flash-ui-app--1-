@@ -7,11 +7,23 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { config } from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { GoogleGenAI } from '@google/genai';
 import OpenAI from 'openai';
+import { OpenRouter } from '@openrouter/sdk';
 
-// Load environment variables from server/.env
-config();
+// Load environment variables from server/.env with explicit path
+// Use override: true to ensure .env values take precedence over system env vars
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const envPath = join(__dirname, '.env');
+console.log('[DEBUG] Loading .env from:', envPath);
+const result = config({ path: envPath, override: true });
+console.log('[DEBUG] dotenv result:', result.error ? `ERROR: ${result.error.message}` : 'SUCCESS');
+
+// Check if there's a system env var overriding
+console.log('[DEBUG] process.env.OPENROUTER_API_KEY after override:', process.env.OPENROUTER_API_KEY?.slice(0, 15) || 'undefined');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -26,7 +38,11 @@ app.use(express.json({ limit: '10mb' }));
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const ZAI_API_KEY = process.env.ZAI_API_KEY;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const ZAI_BASE_URL = 'https://api.z.ai/api/paas/v4/';
+
+// Debug: Log API key presence (not the actual key for security)
+console.log('[DEBUG] OPENROUTER_API_KEY loaded:', OPENROUTER_API_KEY ? `${OPENROUTER_API_KEY.slice(0, 10)}...` : 'NOT FOUND');
 
 function validateGeminiKey(_req: Request, res: Response, next: NextFunction): void {
   if (!GEMINI_API_KEY) {
@@ -39,6 +55,14 @@ function validateGeminiKey(_req: Request, res: Response, next: NextFunction): vo
 function validateGlmKey(_req: Request, res: Response, next: NextFunction): void {
   if (!ZAI_API_KEY) {
     res.status(503).json({ error: 'GLM API key not configured' });
+    return;
+  }
+  next();
+}
+
+function validateOpenRouterKey(_req: Request, res: Response, next: NextFunction): void {
+  if (!OPENROUTER_API_KEY) {
+    res.status(503).json({ error: 'OpenRouter API key not configured' });
     return;
   }
   next();
@@ -66,6 +90,21 @@ function getGlmClient(): OpenAI {
     });
   }
   return glmClient!;
+}
+
+let openrouterClient: OpenRouter | null = null;
+
+function getOpenRouterClient(): OpenRouter {
+  if (!openrouterClient && OPENROUTER_API_KEY) {
+    openrouterClient = new OpenRouter({
+      apiKey: OPENROUTER_API_KEY,
+      defaultHeaders: {
+        'HTTP-Referer': 'http://localhost:3000',
+        'X-Title': 'Flash UI App',
+      },
+    });
+  }
+  return openrouterClient!;
 }
 
 // =============================================================================
@@ -102,6 +141,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
     status: 'ok',
     gemini: Boolean(GEMINI_API_KEY),
     glm: Boolean(ZAI_API_KEY),
+    openrouter: Boolean(OPENROUTER_API_KEY),
   });
 });
 
@@ -267,11 +307,95 @@ app.post('/api/glm/stream', validateGlmKey, async (req: Request, res: Response) 
 });
 
 // =============================================================================
+// OpenRouter Endpoints
+// =============================================================================
+
+interface OpenRouterChatRequest {
+  model: string;
+  messages: Array<{ role: string; content: string }>;
+  temperature?: number;
+}
+
+// POST /api/openrouter/chat - Non-streaming chat completion
+app.post('/api/openrouter/chat', validateOpenRouterKey, async (req: Request, res: Response) => {
+  try {
+    const { model, messages, temperature = 0.9 } = req.body as OpenRouterChatRequest;
+
+    if (!model || !messages) {
+      res.status(400).json({ error: 'Missing required fields: model, messages' });
+      return;
+    }
+
+    const client = getOpenRouterClient();
+    const response = await client.chat.send({
+      model,
+      messages: messages as any,
+      temperature,
+      stream: false,
+    });
+
+    const content = response.choices[0]?.message?.content ?? '';
+    res.json({ content });
+  } catch (error) {
+    console.error('OpenRouter chat error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to complete chat';
+    res.status(500).json({ error: errorMessage });
+  }
+});
+
+// POST /api/openrouter/stream - Streaming chat completion (SSE)
+app.post('/api/openrouter/stream', validateOpenRouterKey, async (req: Request, res: Response) => {
+  try {
+    const { model, messages, temperature = 0.9 } = req.body as OpenRouterChatRequest;
+
+    if (!model || !messages) {
+      res.status(400).json({ error: 'Missing required fields: model, messages' });
+      return;
+    }
+
+    setupSSE(res);
+
+    const client = getOpenRouterClient();
+    const stream = await client.chat.send({
+      model,
+      messages: messages as any,
+      temperature,
+      stream: true,
+    });
+
+    let aborted = false;
+    req.on('close', () => {
+      aborted = true;
+    });
+
+    for await (const chunk of stream) {
+      if (aborted) break;
+      const text = chunk.choices?.[0]?.delta?.content ?? '';
+      if (text) {
+        sendSSEChunk(res, text);
+      }
+    }
+
+    if (!aborted) {
+      sendSSEDone(res);
+    }
+  } catch (error) {
+    console.error('OpenRouter stream error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to stream chat' });
+    } else {
+      sendSSEError(res, 'Stream interrupted');
+    }
+  }
+});
+
+// =============================================================================
 // Start Server
 // =============================================================================
 
 app.listen(PORT, () => {
   console.log(`Proxy server running on http://localhost:${PORT}`);
-  console.log(`  Gemini: ${GEMINI_API_KEY ? 'configured' : 'NOT configured'}`);
-  console.log(`  GLM:    ${ZAI_API_KEY ? 'configured' : 'NOT configured'}`);
+  console.log(`  Gemini:     ${GEMINI_API_KEY ? 'configured' : 'NOT configured'}`);
+  console.log(`  GLM:        ${ZAI_API_KEY ? 'configured' : 'NOT configured'}`);
+  console.log(`  OpenRouter: ${OPENROUTER_API_KEY ? 'configured' : 'NOT configured'}`);
 });
