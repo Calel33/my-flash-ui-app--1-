@@ -1,6 +1,6 @@
 # Repository Map
 
-Generated on: 12/27/2025, 2:57:29 AM
+Generated on: 12/29/2025, 4:13:12 PM
 
 ```text
 └── my-flash-ui-app (1)/
@@ -105,6 +105,10 @@ Generated on: 12/27/2025, 2:57:29 AM
     │   ├── 009-action-bar-toggle-and-prompt-cleanup.md
     │   ├── 010-backend-api-proxy-server.md
     │   └── 011-openrouter-provider-research.md
+    ├── reports/
+    │   └── refactor/
+    │       ├── refactor_index_27-12-2025_030100.md
+    │       └── refactor_index_27-12-2025_040500.md
     ├── research/
     │   ├── glm-provider-diff-stack-plan.md
     │   ├── glm-provider-implementation-plan.md
@@ -175,6 +179,8 @@ Generated on: 12/27/2025, 2:57:29 AM
     │       ├── FILE_MANIFEST.txt
     │       ├── README.md
     │       └── SKILL.md
+    ├── system-rules/
+    │   └── AGENTS.md
     ├── tools/
     │   └── map-generator/
     │       ├── generate.js
