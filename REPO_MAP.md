@@ -1,6 +1,6 @@
 # Repository Map
 
-Generated on: 12/26/2025, 11:18:08 PM
+Generated on: 12/27/2025, 2:57:29 AM
 
 ```text
 └── my-flash-ui-app (1)/
@@ -13,6 +13,7 @@ Generated on: 12/26/2025, 11:18:08 PM
     │   ├── glm.ts
     │   ├── glmClient.ts
     │   ├── glmSmokeTest.ts
+    │   ├── openrouter.ts
     │   ├── providers.ts
     │   └── sseParser.ts
     ├── command/
@@ -44,6 +45,7 @@ Generated on: 12/26/2025, 11:18:08 PM
     │   ├── openspec-proposal.md
     │   ├── orchestrate-feature.md
     │   ├── project-definition-agent.md
+    │   ├── refactor.md
     │   ├── research_codebase-v2.md
     │   ├── research_codebase.md
     │   ├── task-completion-validator.md
@@ -115,14 +117,6 @@ Generated on: 12/26/2025, 11:18:08 PM
     │   ├── proxy.ts
     │   └── tsconfig.json
     ├── skills/
-    │   ├── beads/
-    │   │   ├── references/
-    │   │   │   ├── advanced_workflows.md
-    │   │   │   └── cli_reference.md
-    │   │   ├── scripts/
-    │   │   │   ├── agent_workflow.py
-    │   │   │   └── dependency_analyzer.py
-    │   │   └── SKILL.md
     │   ├── exa-research/
     │   │   ├── references/
     │   │   │   ├── query_patterns.md
@@ -153,6 +147,7 @@ Generated on: 12/26/2025, 11:18:08 PM
     │   │   │       ├── next.config.ts
     │   │   │       └── README.md
     │   │   ├── references/
+    │   │   │   ├── core-workflows.md
     │   │   │   ├── NEXTJS_16_COMPLETE_GUIDE.md
     │   │   │   ├── nextjs16-advanced-patterns.md
     │   │   │   ├── nextjs16-migration-playbook.md
@@ -163,6 +158,7 @@ Generated on: 12/26/2025, 11:18:08 PM
     │   ├── react-19/
     │   │   ├── references/
     │   │   │   ├── advanced-examples.md
+    │   │   │   ├── core-workflows.md
     │   │   │   ├── hooks-api.md
     │   │   │   ├── migration-patterns.md
     │   │   │   ├── security-guide.md
