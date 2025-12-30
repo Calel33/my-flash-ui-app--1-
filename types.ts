@@ -10,6 +10,7 @@ export interface Artifact {
   html: string;
   agentPrompt?: string;
   status: 'streaming' | 'complete' | 'error';
+  errorMessage?: string;
   isDesignSystem?: boolean;
   displayName?: string;
   sourceFilename?: string;

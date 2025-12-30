@@ -1,6 +1,6 @@
 # Repository Map
 
-Generated on: 12/29/2025, 4:13:12 PM
+Generated on: 12/30/2025, 4:07:48 PM
 
 ```text
 └── my-flash-ui-app (1)/
@@ -16,6 +16,8 @@ Generated on: 12/29/2025, 4:13:12 PM
     │   ├── openrouter.ts
     │   ├── providers.ts
     │   └── sseParser.ts
+    ├── backup_temp/
+    │   └── index_original_29-12-2025_163940.tsx
     ├── command/
     │   ├── Always.md
     │   ├── APP_ARCHITECTURE.md
@@ -48,16 +50,23 @@ Generated on: 12/29/2025, 4:13:12 PM
     │   ├── refactor.md
     │   ├── research_codebase-v2.md
     │   ├── research_codebase.md
+    │   ├── sec-check.md
     │   ├── task-completion-validator.md
     │   └── ui-mode.md
     ├── components/
+    │   ├── ActionBar.tsx
+    │   ├── AppShell.tsx
     │   ├── ArtifactCard.tsx
     │   ├── DottedGlowBackground.tsx
+    │   ├── DrawerContent.tsx
     │   ├── ElementEditor.tsx
+    │   ├── EmptyState.tsx
     │   ├── GlmLoadingIndicator.tsx
     │   ├── Icons.tsx
     │   ├── ImportDesignPanel.tsx
+    │   ├── PromptBar.tsx
     │   ├── PromptPopup.tsx
+    │   ├── SessionGrid.tsx
     │   └── SideDrawer.tsx
     ├── docs/
     │   ├── core/
@@ -80,10 +89,15 @@ Generated on: 12/29/2025, 4:13:12 PM
     │   ├── sessions/
     │   │   ├── endings/
     │   │   ├── general/
-    │   │   │   └── SESSION_2025-10-08_INITIAL_SETUP.md
+    │   │   │   ├── SESSION_2025-10-08_INITIAL_SETUP.md
+    │   │   │   ├── SESSION_2025-12-29_PHASE1_SAFETY_NET.md
+    │   │   │   └── SESSION_2025-12-29_PHASE2_HOOKS_EXTRACTION.md
     │   │   ├── handoffs/
+    │   │   │   ├── HANDOFF_2025-12-29_PHASE2_HOOKS_PROGRESS.md
+    │   │   │   └── HANDOFF_2025-12-29_PHASE2_KICKOFF.md
     │   │   ├── learnings/
     │   │   └── pauses/
+    │   │       └── PAUSE_2025-12-29_PHASE2_HOOKS_PROGRESS.md
     │   ├── tasks/
     │   │   └── example-task/
     │   │       ├── learnings/
@@ -93,6 +107,20 @@ Generated on: 12/29/2025, 4:13:12 PM
     │   ├── AGENTS.md
     │   ├── README.md
     │   └── SESSION_LOG.md
+    ├── hooks/
+    │   ├── useArtifactGeneration.ts
+    │   ├── useDrawer.ts
+    │   ├── useDrawerActions.ts
+    │   ├── useDrawerOpeners.ts
+    │   ├── useElementEditor.ts
+    │   ├── useIframeSelection.ts
+    │   ├── useLibrary.ts
+    │   ├── usePreferences.ts
+    │   ├── useSessionMutations.ts
+    │   ├── useSessionNavigation.ts
+    │   ├── useSnippetConversion.ts
+    │   ├── useSurpriseMe.ts
+    │   └── useVariations.ts
     ├── prompts/
     │   ├── 001-import-design-html-uploads.md
     │   ├── 002-add-glm-provider-research.md
@@ -104,11 +132,13 @@ Generated on: 12/29/2025, 4:13:12 PM
     │   ├── 008-css-design-tokens-and-accessibility.md
     │   ├── 009-action-bar-toggle-and-prompt-cleanup.md
     │   ├── 010-backend-api-proxy-server.md
-    │   └── 011-openrouter-provider-research.md
+    │   ├── 011-openrouter-provider-research.md
+    │   └── 012-comparison-mode-multi-provider.md
     ├── reports/
     │   └── refactor/
     │       ├── refactor_index_27-12-2025_030100.md
-    │       └── refactor_index_27-12-2025_040500.md
+    │       ├── refactor_index_27-12-2025_040500.md
+    │       └── refactor_index_tsx_29-12-2025_163940.md
     ├── research/
     │   ├── glm-provider-diff-stack-plan.md
     │   ├── glm-provider-implementation-plan.md
@@ -181,6 +211,11 @@ Generated on: 12/29/2025, 4:13:12 PM
     │       └── SKILL.md
     ├── system-rules/
     │   └── AGENTS.md
+    ├── tests/
+    │   ├── app.smoke.test.tsx
+    │   ├── element-editor.smoke.test.tsx
+    │   ├── setup.ts
+    │   └── variations-parser.test.ts
     ├── tools/
     │   └── map-generator/
     │       ├── generate.js

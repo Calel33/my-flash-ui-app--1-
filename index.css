@@ -582,6 +582,15 @@ body {
     align-items: center;
 }
 
+.floating-input-container.bar-position-bottom .input-wrapper {
+    max-width: none;
+    width: auto;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    overflow: visible;
+}
+
 /* Left position */
 .floating-input-container.bar-position-left {
     left: 20px;
@@ -640,6 +649,7 @@ body {
     overflow: hidden;
 }
 
+/* Allow horizontal scroll when controls overflow (long provider/model names) */
 /* Pin control button styling */
 .pin-control-btn.active {
     color: #3b82f6;
@@ -1557,6 +1567,7 @@ body {
     padding: 0 var(--spacing-sm);
     border-left: 1px solid var(--border-color);
     margin-left: var(--spacing-xs);
+    flex: 0 0 auto;
 }
 
 .generation-slider {
@@ -1617,6 +1628,8 @@ body {
     align-items: center;
     padding: 0 var(--spacing-sm);
     border-left: 1px solid var(--border-color);
+    flex: 0 0 auto;
+    max-width: 240px;
 }
 
 .model-select {
@@ -1630,6 +1643,8 @@ body {
     outline: none;
     transition: all 0.2s;
     font-family: var(--font-sans);
+    max-width: 100%;
+    flex: 1 1 auto;
 }
 
 .model-select:hover:not(:disabled) {
@@ -1657,6 +1672,8 @@ body {
     align-items: center;
     padding: 0 var(--spacing-sm);
     border-left: 1px solid var(--border-color);
+    flex: 0 0 auto;
+    max-width: 200px;
 }
 
 .provider-select {
@@ -1670,6 +1687,8 @@ body {
     outline: none;
     transition: all 0.2s;
     font-family: var(--font-sans);
+    max-width: 100%;
+    flex: 1 1 auto;
 }
 
 .provider-select:hover:not(:disabled) {
