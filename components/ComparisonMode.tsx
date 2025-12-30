@@ -112,6 +112,7 @@ export default function ComparisonMode({
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
+              onInput={(e) => setPrompt((e.target as HTMLTextAreaElement).value)}
               placeholder="Enter prompt to compare across providers..."
               className="comparison-prompt-input"
             />

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * SSE Stream Parser Utility
  * Shared utility for parsing Server-Sent Events streams from proxy endpoints.
  */
@@ -16,6 +16,14 @@ export interface SSEParserOptions {
 export async function* parseSSEStream(
   response: Response
 ): AsyncGenerator<string, void, unknown> {
+  // Strict validation: Ensure response is actually SSE
+  const contentType = response.headers.get('content-type');
+  if (!contentType || !contentType.includes('text/event-stream')) {
+    throw new Error(
+      `Invalid response type: expected text/event-stream, got ${contentType || 'none'}`
+    );
+  }
+
   const reader = response.body?.getReader();
   if (!reader) throw new Error('No response body');
 
@@ -38,8 +46,9 @@ export async function* parseSSEStream(
           const parsed = JSON.parse(data);
           if (parsed.chunk) yield parsed.chunk;
           if (parsed.error) throw new Error(parsed.error);
-        } catch {
-          // Skip malformed chunks
+        } catch (parseError) {
+          // Skip malformed chunks but log for debugging
+          console.warn('[SSE Parser] Malformed chunk:', line);
         }
       }
     }

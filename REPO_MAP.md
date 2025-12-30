@@ -1,6 +1,6 @@
 # Repository Map
 
-Generated on: 12/30/2025, 5:50:58 PM
+Generated on: 12/30/2025, 6:15:11 PM
 
 ```text
 └── my-flash-ui-app (1)/
@@ -55,6 +55,7 @@ Generated on: 12/30/2025, 5:50:58 PM
     │   ├── ActionBar.tsx
     │   ├── AppShell.tsx
     │   ├── ArtifactCard.tsx
+    │   ├── ComparisonMode.tsx
     │   ├── DottedGlowBackground.tsx
     │   ├── DrawerContent.tsx
     │   ├── ElementEditor.tsx
@@ -107,6 +108,8 @@ Generated on: 12/30/2025, 5:50:58 PM
     │   └── SESSION_LOG.md
     ├── hooks/
     │   ├── useArtifactGeneration.ts
+    │   ├── useComparisonGeneration.ts
+    │   ├── useComparisonMode.ts
     │   ├── useDrawer.ts
     │   ├── useDrawerActions.ts
     │   ├── useDrawerOpeners.ts
