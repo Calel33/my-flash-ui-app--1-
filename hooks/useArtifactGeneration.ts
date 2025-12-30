@@ -17,7 +17,6 @@ export function useArtifactGeneration(options: {
   setInputValue: Dispatch<SetStateAction<string>>;
   setIsLoading: Dispatch<SetStateAction<boolean>>;
   setSessions: Dispatch<SetStateAction<Session[]>>;
-  setCurrentSessionIndex: Dispatch<SetStateAction<number>>;
   setFocusedArtifactIndex: Dispatch<SetStateAction<number | null>>;
 }) {
   const {
@@ -32,7 +31,6 @@ export function useArtifactGeneration(options: {
     setInputValue,
     setIsLoading,
     setSessions,
-    setCurrentSessionIndex,
     setFocusedArtifactIndex,
   } = options;
 
@@ -62,12 +60,7 @@ export function useArtifactGeneration(options: {
         artifacts: placeholderArtifacts,
       };
 
-      setSessions((prev) => {
-        const nextIndex = prev.length;
-        const updated = [...prev, newSession];
-        setCurrentSessionIndex(nextIndex);
-        return updated;
-      });
+      setSessions((prev) => [...prev, newSession]);
       setFocusedArtifactIndex(null);
 
       try {
@@ -232,7 +225,6 @@ export function useArtifactGeneration(options: {
       setInputValue,
       setIsLoading,
       setSessions,
-      setCurrentSessionIndex,
       setFocusedArtifactIndex,
     ],
   );

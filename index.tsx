@@ -6,7 +6,7 @@
 
 //
 
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 
 import { Session } from './types';
@@ -39,6 +39,7 @@ export function App() {
     const [sessions, setSessions] = useState<Session[]>([]);
     const [currentSessionIndex, setCurrentSessionIndex] = useState<number>(-1);
     const [focusedArtifactIndex, setFocusedArtifactIndex] = useState<number | null>(null);
+    const prevSessionsLength = useRef<number>(0);
     const {
         activeSystem,
         clearActiveSystem,
@@ -89,7 +90,6 @@ export function App() {
         setInputValue,
         setIsLoading,
         setSessions,
-        setCurrentSessionIndex,
         setFocusedArtifactIndex,
     });
     const { componentVariations, handleGenerateVariations } = useVariations({
@@ -138,6 +138,13 @@ export function App() {
         setFocusedArtifactIndex,
     });
 
+    useEffect(() => {
+        if (sessions.length > prevSessionsLength.current) {
+            setCurrentSessionIndex(sessions.length - 1);
+        }
+        prevSessionsLength.current = sessions.length;
+    }, [sessions]);
+
     const gridScrollRef = useRef<HTMLDivElement>(null);
 
     const { copyFeedback, copyToClipboard, handleDownload } = useDrawerActions({
@@ -148,13 +155,12 @@ export function App() {
 
     const { applyVariation, deleteFromLibrary, handleImportDesign, handleSaveToLibrary, loadFromLibrary, toggleSystemContext } =
         useSessionMutations({
-        sessions,
-        currentSessionIndex,
-        focusedArtifactIndex,
-        setSessions,
-        setCurrentSessionIndex,
-        setFocusedArtifactIndex,
-        prependLibraryItem,
+            sessions,
+            currentSessionIndex,
+            focusedArtifactIndex,
+            setSessions,
+            setFocusedArtifactIndex,
+            prependLibraryItem,
             deleteLibraryItem,
             activeSystem,
             clearActiveSystem,

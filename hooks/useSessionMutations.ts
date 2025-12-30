@@ -9,7 +9,6 @@ type Options = {
   currentSessionIndex: number;
   focusedArtifactIndex: number | null;
   setSessions: Dispatch<SetStateAction<Session[]>>;
-  setCurrentSessionIndex: Dispatch<SetStateAction<number>>;
   setFocusedArtifactIndex: Dispatch<SetStateAction<number | null>>;
   prependLibraryItem: (item: LibraryItem) => void;
   deleteLibraryItem: (id: string) => void;
@@ -25,7 +24,6 @@ export function useSessionMutations(options: Options) {
     currentSessionIndex,
     focusedArtifactIndex,
     setSessions,
-    setCurrentSessionIndex,
     setFocusedArtifactIndex,
     prependLibraryItem,
     deleteLibraryItem,
@@ -85,17 +83,12 @@ export function useSessionMutations(options: Options) {
         artifacts: [artifact],
       };
 
-      setSessions((prev) => {
-        const nextIndex = prev.length;
-        const updated = [...prev, newSession];
-        setCurrentSessionIndex(nextIndex);
-        return updated;
-      });
+      setSessions((prev) => [...prev, newSession]);
       setFocusedArtifactIndex(0);
       prependLibraryItem(libraryItem);
       closeDrawer();
     },
-    [closeDrawer, prependLibraryItem, setCurrentSessionIndex, setFocusedArtifactIndex, setSessions],
+    [closeDrawer, prependLibraryItem, setFocusedArtifactIndex, setSessions],
   );
 
   const toggleSystemContext = useCallback(
@@ -138,16 +131,11 @@ export function useSessionMutations(options: Options) {
         artifacts: [artifact],
       };
 
-      setSessions((prev) => {
-        const nextIndex = prev.length;
-        const updated = [...prev, newSession];
-        setCurrentSessionIndex(nextIndex);
-        return updated;
-      });
+      setSessions((prev) => [...prev, newSession]);
       setFocusedArtifactIndex(0);
       closeDrawer();
     },
-    [closeDrawer, setCurrentSessionIndex, setFocusedArtifactIndex, setSessions],
+    [closeDrawer, setFocusedArtifactIndex, setSessions],
   );
 
   return {
