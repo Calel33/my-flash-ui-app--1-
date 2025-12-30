@@ -2415,3 +2415,44 @@ body {
     font-size: 0.875rem;
 }
 
+.comparison-slots-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+}
+
+.comparison-slot-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--glass-overlay-subtle);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+}
+
+.add-slot-btn {
+    padding: var(--spacing-md);
+    background: var(--glass-overlay-medium);
+    border: 1px dashed var(--glass-border);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-duration) var(--transition-easing);
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    width: 100%;
+}
+
+.add-slot-btn:hover {
+    background: var(--glass-overlay-strong);
+    border-color: var(--accent-color);
+    color: var(--text-primary);
+}
+
+.add-slot-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+

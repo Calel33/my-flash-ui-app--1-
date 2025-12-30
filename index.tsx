@@ -24,6 +24,7 @@ import { useDrawerActions } from './hooks/useDrawerActions';
 import { useSessionMutations } from './hooks/useSessionMutations';
 import { useDrawerOpeners } from './hooks/useDrawerOpeners';
 import { useSurpriseMe } from './hooks/useSurpriseMe';
+import { useComparisonMode } from './hooks/useComparisonMode';
 
 import GlmLoadingIndicator from './components/GlmLoadingIndicator';
 import SideDrawer from './components/SideDrawer';
@@ -190,11 +191,25 @@ export function App() {
 
     const { handleSurpriseMe } = useSurpriseMe({ setInputValue, handleSendMessage });
 
+    const { addSlot, removeSlot, updateSlot, canAddMore } = useComparisonMode({
+        slots: comparisonSlots,
+        setSlots: setComparisonSlots,
+    });
+
     const currentSnippetData = drawerState.mode === 'snippet' && snippetTab === 'react' ? (drawerState.reactData || '') : (drawerState.data || '');
 
     return (
         <>
-            {isComparisonMode && <ComparisonMode onExit={() => setIsComparisonMode(false)} />}
+            {isComparisonMode && (
+                <ComparisonMode
+                    slots={comparisonSlots}
+                    onAddSlot={addSlot}
+                    onRemoveSlot={removeSlot}
+                    onUpdateSlot={updateSlot}
+                    canAddMore={canAddMore}
+                    onExit={() => setIsComparisonMode(false)}
+                />
+            )}
             <ElementEditor
                 element={editingElement}
                 isOpen={isElementEditorOpen}
