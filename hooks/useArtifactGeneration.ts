@@ -188,7 +188,12 @@ export function useArtifactGeneration(options: {
           }
         };
 
-        await Promise.all(placeholderArtifacts.map((art, i) => generateArtifact(art, generatedStyles[i])));
+        await Promise.all(
+          placeholderArtifacts.map((art, i) => {
+            const styleName = generatedStyles[i] || `Direction ${i + 1}`;
+            return generateArtifact(art, styleName);
+          }),
+        );
       } finally {
         setIsLoading(false);
       }
