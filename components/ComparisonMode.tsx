@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ComparisonSlot } from '../types';
 import { MODELS } from '../ai/providers';
 import { useComparisonGeneration } from '../hooks/useComparisonGeneration';
@@ -34,6 +34,18 @@ export default function ComparisonMode({
   };
 
   const hasResults = results.length > 0;
+
+  // ESC key handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onExit();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onExit]);
 
   return (
     <div className="comparison-mode-container">
@@ -127,7 +139,14 @@ export default function ComparisonMode({
                     <div className="error-msg">{result.error}</div>
                   )}
                   {result.content && (
-                    <div className="result-preview">{result.content.substring(0, 200)}...</div>
+                    <div className="result-preview-wrapper">
+                      <iframe
+                        srcDoc={result.content}
+                        className="result-preview-iframe"
+                        sandbox="allow-scripts"
+                        title={`Result: ${result.provider} - ${result.modelId}`}
+                      />
+                    </div>
                   )}
                 </div>
               ))}
