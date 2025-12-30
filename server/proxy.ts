@@ -100,6 +100,10 @@ function getOpenRouterClient(): OpenRouter {
   if (!openrouterClient && OPENROUTER_API_KEY) {
     openrouterClient = new OpenRouter({
       apiKey: OPENROUTER_API_KEY,
+      defaultHeaders: {
+        'HTTP-Referer': HTTP_REFERER,
+        'X-Title': 'Flash UI App',
+      },
     });
   }
   return openrouterClient!;

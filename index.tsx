@@ -80,7 +80,6 @@ export function App() {
     const { handleSendMessage } = useArtifactGeneration({
         inputValue,
         isLoading,
-        sessionsLength: sessions.length,
         isDesignSystemMode,
         activeSystem,
         concurrentGenerations,
@@ -149,14 +148,13 @@ export function App() {
 
     const { applyVariation, deleteFromLibrary, handleImportDesign, handleSaveToLibrary, loadFromLibrary, toggleSystemContext } =
         useSessionMutations({
-            sessions,
-            currentSessionIndex,
-            focusedArtifactIndex,
-            sessionsLength: sessions.length,
-            setSessions,
-            setCurrentSessionIndex,
-            setFocusedArtifactIndex,
-            prependLibraryItem,
+        sessions,
+        currentSessionIndex,
+        focusedArtifactIndex,
+        setSessions,
+        setCurrentSessionIndex,
+        setFocusedArtifactIndex,
+        prependLibraryItem,
             deleteLibraryItem,
             activeSystem,
             clearActiveSystem,

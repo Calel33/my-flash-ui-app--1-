@@ -8,7 +8,6 @@ type Options = {
   sessions: Session[];
   currentSessionIndex: number;
   focusedArtifactIndex: number | null;
-  sessionsLength: number;
   setSessions: Dispatch<SetStateAction<Session[]>>;
   setCurrentSessionIndex: Dispatch<SetStateAction<number>>;
   setFocusedArtifactIndex: Dispatch<SetStateAction<number | null>>;
@@ -25,7 +24,6 @@ export function useSessionMutations(options: Options) {
     sessions,
     currentSessionIndex,
     focusedArtifactIndex,
-    sessionsLength,
     setSessions,
     setCurrentSessionIndex,
     setFocusedArtifactIndex,
@@ -87,13 +85,17 @@ export function useSessionMutations(options: Options) {
         artifacts: [artifact],
       };
 
-      setSessions((prev) => [...prev, newSession]);
-      setCurrentSessionIndex(sessionsLength);
+      setSessions((prev) => {
+        const nextIndex = prev.length;
+        const updated = [...prev, newSession];
+        setCurrentSessionIndex(nextIndex);
+        return updated;
+      });
       setFocusedArtifactIndex(0);
       prependLibraryItem(libraryItem);
       closeDrawer();
     },
-    [closeDrawer, prependLibraryItem, sessionsLength, setCurrentSessionIndex, setFocusedArtifactIndex, setSessions],
+    [closeDrawer, prependLibraryItem, setCurrentSessionIndex, setFocusedArtifactIndex, setSessions],
   );
 
   const toggleSystemContext = useCallback(
@@ -136,12 +138,16 @@ export function useSessionMutations(options: Options) {
         artifacts: [artifact],
       };
 
-      setSessions((prev) => [...prev, newSession]);
-      setCurrentSessionIndex(sessionsLength);
+      setSessions((prev) => {
+        const nextIndex = prev.length;
+        const updated = [...prev, newSession];
+        setCurrentSessionIndex(nextIndex);
+        return updated;
+      });
       setFocusedArtifactIndex(0);
       closeDrawer();
     },
-    [closeDrawer, sessionsLength, setCurrentSessionIndex, setFocusedArtifactIndex, setSessions],
+    [closeDrawer, setCurrentSessionIndex, setFocusedArtifactIndex, setSessions],
   );
 
   return {
@@ -153,4 +159,3 @@ export function useSessionMutations(options: Options) {
     toggleSystemContext,
   };
 }
-

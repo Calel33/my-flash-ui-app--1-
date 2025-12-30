@@ -12,19 +12,22 @@ export function useIframeSelection(options: {
 
   useEffect(() => {
     const handleIframeMessage = async (event: MessageEvent) => {
-      if (event.data?.type === 'ELEMENT_SELECTED') {
-        const { elementData, outerHTML, styleContext } = event.data;
+      try {
+        if (event.data?.type === 'ELEMENT_SELECTED') {
+          const { elementData, outerHTML, styleContext } = event.data;
 
-        if (selectorMode === 'edit' && elementData) {
-          setEditingElement(elementData);
-          setIsElementEditorOpen(true);
-        } else if (selectorMode === 'extract') {
-          await handleExtractSnippet(outerHTML, styleContext);
+          if (selectorMode === 'edit' && elementData) {
+            setEditingElement(elementData);
+            setIsElementEditorOpen(true);
+          } else if (selectorMode === 'extract') {
+            await handleExtractSnippet(outerHTML, styleContext);
+          }
         }
+      } catch (error) {
+        console.error('Failed to handle iframe selection message', error);
       }
     };
     window.addEventListener('message', handleIframeMessage);
     return () => window.removeEventListener('message', handleIframeMessage);
   }, [selectorMode, setEditingElement, setIsElementEditorOpen, handleExtractSnippet]);
 }
-

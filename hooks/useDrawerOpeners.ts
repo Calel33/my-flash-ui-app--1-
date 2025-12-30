@@ -16,28 +16,42 @@ export function useDrawerOpeners(options: {
 
   const handleShowCode = useCallback(() => {
     const currentSession = sessions[currentSessionIndex];
-    if (currentSession && focusedArtifactIndex !== null) {
-      const artifact = currentSession.artifacts[focusedArtifactIndex];
-      openDrawer({
-        mode: 'code',
-        title: 'Source Code',
-        data: artifact.html,
-        artifactName: artifact.displayName || artifact.styleName,
-      });
-    }
+    const artifacts = currentSession?.artifacts;
+    const hasValidArtifact =
+      Array.isArray(artifacts) &&
+      typeof focusedArtifactIndex === 'number' &&
+      focusedArtifactIndex >= 0 &&
+      focusedArtifactIndex < artifacts.length;
+
+    if (!currentSession || !hasValidArtifact) return;
+
+    const artifact = artifacts[focusedArtifactIndex];
+    openDrawer({
+      mode: 'code',
+      title: 'Source Code',
+      data: artifact.html,
+      artifactName: artifact.displayName || artifact.styleName,
+    });
   }, [currentSessionIndex, focusedArtifactIndex, openDrawer, sessions]);
 
   const handleShowAgentPrompt = useCallback(() => {
     const currentSession = sessions[currentSessionIndex];
-    if (currentSession && focusedArtifactIndex !== null) {
-      const artifact = currentSession.artifacts[focusedArtifactIndex];
-      openDrawer({
-        mode: 'agent-prompt',
-        title: 'Agent Logic',
-        data: artifact.agentPrompt || 'Instruction metadata not available.',
-        artifactName: artifact.displayName || artifact.styleName,
-      });
-    }
+    const artifacts = currentSession?.artifacts;
+    const hasValidArtifact =
+      Array.isArray(artifacts) &&
+      typeof focusedArtifactIndex === 'number' &&
+      focusedArtifactIndex >= 0 &&
+      focusedArtifactIndex < artifacts.length;
+
+    if (!currentSession || !hasValidArtifact) return;
+
+    const artifact = artifacts[focusedArtifactIndex];
+    openDrawer({
+      mode: 'agent-prompt',
+      title: 'Agent Logic',
+      data: artifact.agentPrompt || 'Instruction metadata not available.',
+      artifactName: artifact.displayName || artifact.styleName,
+    });
   }, [currentSessionIndex, focusedArtifactIndex, openDrawer, sessions]);
 
   const handleShowLibrary = useCallback(() => {
@@ -50,4 +64,3 @@ export function useDrawerOpeners(options: {
 
   return { handleShowAgentPrompt, handleShowCode, handleShowImport, handleShowLibrary };
 }
-

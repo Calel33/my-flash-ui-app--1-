@@ -129,7 +129,7 @@ export default function DrawerContent(props: Props) {
           {componentVariations.map((v, i) => (
             <div key={i} className="sexy-card" onClick={() => applyVariation(v.html)}>
               <div className="sexy-preview">
-                <iframe srcDoc={v.html} title={v.name} sandbox="allow-scripts allow-same-origin" />
+                <iframe srcDoc={v.html} title={v.name} sandbox="allow-scripts" />
               </div>
               <div className="sexy-label">{v.name}</div>
             </div>
@@ -173,4 +173,3 @@ export default function DrawerContent(props: Props) {
     </>
   );
 }
-

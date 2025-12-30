@@ -148,6 +148,8 @@ export function useSnippetConversion(options: {
         const clean = cleanCodeFences(accumulated);
         setDrawerState((prev) => ({ ...prev, data: clean }));
       }
+    } catch (e: any) {
+      setDrawerState((prev) => ({ ...prev, data: `// Error: ${e.message}` }));
     } finally {
       setIsLoading(false);
     }
@@ -164,4 +166,3 @@ export function useSnippetConversion(options: {
 
   return { handleExtractSnippet, handlePortToReact };
 }
-

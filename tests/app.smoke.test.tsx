@@ -63,18 +63,23 @@ describe('App smoke', () => {
 
     expect(generate.streamHtmlArtifact).toHaveBeenCalledTimes(3);
 
+    let artifactCard: HTMLElement | null = null;
     await waitFor(() => {
-      expect(document.querySelector('.artifact-card')).toBeTruthy();
+      artifactCard = document.querySelector('.artifact-card') as HTMLElement | null;
+      expect(artifactCard).toBeTruthy();
     });
-    await user.click(document.querySelector('.artifact-card') as HTMLElement);
+    if (!artifactCard) throw new Error('Artifact card not found');
+    await user.click(artifactCard);
 
-    const getEnabledStoreButton = () =>
-      screen.getAllByTitle('Archive to Library').find((el) => !(el as HTMLButtonElement).disabled);
-
+    let enabledStoreButton: HTMLElement | undefined;
     await waitFor(() => {
-      expect(getEnabledStoreButton()).toBeTruthy();
+      enabledStoreButton = screen
+        .getAllByTitle('Archive to Library')
+        .find((el) => !(el as HTMLButtonElement).disabled);
+      expect(enabledStoreButton).toBeTruthy();
     });
-    await user.click(getEnabledStoreButton() as HTMLElement);
+    if (!enabledStoreButton) throw new Error('Enabled store button not found');
+    await user.click(enabledStoreButton);
 
     await user.click(screen.getAllByTitle('My Creative Library')[0]);
     expect(await screen.findByText('Creative Library')).toBeInTheDocument();

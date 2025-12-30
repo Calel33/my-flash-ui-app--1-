@@ -43,14 +43,14 @@ export function useElementEditor(options: {
           textContent,
           href,
         },
-        '*',
+        window.location.origin,
       );
     },
     [editingElement],
   );
 
   const saveElementEdits = useCallback(() => {
-    if (focusedArtifactIndex === null || !currentSessionIndex) return;
+    if (focusedArtifactIndex === null || currentSessionIndex === undefined || currentSessionIndex === null) return;
 
     const iframes = document.querySelectorAll('.artifact-card.focused iframe');
     if (iframes.length === 0) return;

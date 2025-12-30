@@ -1,6 +1,6 @@
 # Repository Map
 
-Generated on: 12/29/2025, 8:33:39 PM
+Generated on: 12/30/2025, 4:07:48 PM
 
 ```text
 └── my-flash-ui-app (1)/
@@ -50,6 +50,7 @@ Generated on: 12/29/2025, 8:33:39 PM
     │   ├── refactor.md
     │   ├── research_codebase-v2.md
     │   ├── research_codebase.md
+    │   ├── sec-check.md
     │   ├── task-completion-validator.md
     │   └── ui-mode.md
     ├── components/

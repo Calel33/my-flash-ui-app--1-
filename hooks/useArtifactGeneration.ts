@@ -8,7 +8,6 @@ import { generateId } from '../utils';
 export function useArtifactGeneration(options: {
   inputValue: string;
   isLoading: boolean;
-  sessionsLength: number;
   isDesignSystemMode: boolean;
   activeSystem: LibraryItem | null;
   concurrentGenerations: number;
@@ -24,7 +23,6 @@ export function useArtifactGeneration(options: {
   const {
     inputValue,
     isLoading,
-    sessionsLength,
     isDesignSystemMode,
     activeSystem,
     concurrentGenerations,
@@ -64,17 +62,41 @@ export function useArtifactGeneration(options: {
         artifacts: placeholderArtifacts,
       };
 
-      setSessions((prev) => [...prev, newSession]);
-      setCurrentSessionIndex(sessionsLength);
+      setSessions((prev) => {
+        const nextIndex = prev.length;
+        const updated = [...prev, newSession];
+        setCurrentSessionIndex(nextIndex);
+        return updated;
+      });
       setFocusedArtifactIndex(null);
 
       try {
-        // Generate style directions using the facade
-        const generatedStyles = await generateStyles({
-          provider: provider,
-          prompt: trimmedInput,
-          isDesignSystemMode,
-        });
+        let generatedStyles: string[] = [];
+        try {
+          // Generate style directions using the facade
+          generatedStyles = await generateStyles({
+            provider: provider,
+            prompt: trimmedInput,
+            isDesignSystemMode,
+          });
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to generate styles';
+          setSessions((prev) =>
+            prev.map((s) =>
+              s.id === sessionId
+                ? {
+                    ...s,
+                    artifacts: s.artifacts.map((art) => ({
+                      ...art,
+                      status: 'error',
+                      errorMessage,
+                    })),
+                  }
+                : s,
+            ),
+          );
+          throw error;
+        }
 
         setSessions((prev) =>
           prev.map((s) =>
@@ -102,58 +124,98 @@ export function useArtifactGeneration(options: {
         const generateArtifact = async (artifact: Artifact, style: string) => {
           const finalPrompt = systemInstructions + `\n\nDirection: ${style}. Return RAW HTML only.`;
 
-          setSessions((prev) =>
-            prev.map((sess) =>
-              sess.id === sessionId
-                ? {
-                    ...sess,
-                    artifacts: sess.artifacts.map((art) =>
-                      art.id === artifact.id ? { ...art, agentPrompt: finalPrompt } : art,
-                    ),
-                  }
-                : sess,
-            ),
-          );
-
-          const stream = streamHtmlArtifact({
-            provider: provider,
-            prompt: finalPrompt,
-            modelId: isDesignSystemMode ? designSystemModel : componentModel,
-            useThinking: isDesignSystemMode,
-          });
-
-          let accumulated = '';
-          for await (const chunk of stream) {
-            accumulated += chunk;
+          try {
             setSessions((prev) =>
               prev.map((sess) =>
                 sess.id === sessionId
                   ? {
                       ...sess,
                       artifacts: sess.artifacts.map((art) =>
-                        art.id === artifact.id ? { ...art, html: accumulated } : art,
+                        art.id === artifact.id ? { ...art, agentPrompt: finalPrompt } : art,
+                      ),
+                    }
+                  : sess,
+              ),
+            );
+
+            const stream = streamHtmlArtifact({
+              provider: provider,
+              prompt: finalPrompt,
+              modelId: isDesignSystemMode ? designSystemModel : componentModel,
+              useThinking: isDesignSystemMode,
+            });
+
+            let accumulated = '';
+            for await (const chunk of stream) {
+              accumulated += chunk;
+              setSessions((prev) =>
+                prev.map((sess) =>
+                  sess.id === sessionId
+                    ? {
+                        ...sess,
+                        artifacts: sess.artifacts.map((art) =>
+                          art.id === artifact.id ? { ...art, html: accumulated } : art,
+                        ),
+                      }
+                    : sess,
+                ),
+              );
+            }
+            const final = cleanCodeFences(accumulated);
+            setSessions((prev) =>
+              prev.map((sess) =>
+                sess.id === sessionId
+                  ? {
+                      ...sess,
+                      artifacts: sess.artifacts.map((art) =>
+                        art.id === artifact.id
+                          ? { ...art, html: final, status: 'complete', errorMessage: undefined }
+                          : art,
+                      ),
+                    }
+                  : sess,
+              ),
+            );
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to generate artifact';
+            setSessions((prev) =>
+              prev.map((sess) =>
+                sess.id === sessionId
+                  ? {
+                      ...sess,
+                      artifacts: sess.artifacts.map((art) =>
+                        art.id === artifact.id
+                          ? { ...art, html: '', status: 'error', errorMessage }
+                          : art,
                       ),
                     }
                   : sess,
               ),
             );
           }
-          const final = cleanCodeFences(accumulated);
-          setSessions((prev) =>
-            prev.map((sess) =>
-              sess.id === sessionId
-                ? {
-                    ...sess,
-                    artifacts: sess.artifacts.map((art) =>
-                      art.id === artifact.id ? { ...art, html: final, status: 'complete' } : art,
-                    ),
-                  }
-                : sess,
-            ),
-          );
         };
 
-        await Promise.all(placeholderArtifacts.map((art, i) => generateArtifact(art, generatedStyles[i])));
+        await Promise.all(
+          placeholderArtifacts.map(async (art, i) => {
+            try {
+              await generateArtifact(art, generatedStyles[i]);
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : 'Failed to generate artifact';
+              setSessions((prev) =>
+                prev.map((sess) =>
+                  sess.id === sessionId
+                    ? {
+                        ...sess,
+                        artifacts: sess.artifacts.map((a) =>
+                          a.id === art.id ? { ...a, status: 'error', errorMessage, html: '' } : a,
+                        ),
+                      }
+                    : sess,
+                ),
+              );
+            }
+          }),
+        );
       } finally {
         setIsLoading(false);
       }
@@ -161,7 +223,6 @@ export function useArtifactGeneration(options: {
     [
       inputValue,
       isLoading,
-      sessionsLength,
       isDesignSystemMode,
       activeSystem,
       concurrentGenerations,

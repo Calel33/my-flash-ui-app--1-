@@ -14,7 +14,7 @@ export function useLibrary() {
     try {
       setStoredItems(JSON.parse(saved));
     } catch (error) {
-      console.error(error);
+      console.error('Failed to parse library items from localStorage:', error);
     }
   }, []);
 
@@ -49,4 +49,3 @@ export function useLibrary() {
     toggleActiveSystem,
   };
 }
-

@@ -20,6 +20,14 @@ import {
 
 type ModelOption = { id: string; name: string };
 
+const BAR_POSITIONS: BarPosition[] = ['bottom', 'left', 'right'];
+
+function cycleBarPosition(current: BarPosition): BarPosition {
+  const currentIndex = BAR_POSITIONS.indexOf(current);
+  const nextIndex = (currentIndex + 1) % BAR_POSITIONS.length;
+  return BAR_POSITIONS[nextIndex];
+}
+
 export default function PromptBar({
   activeSystem,
   availableModels,
@@ -87,10 +95,7 @@ export default function PromptBar({
               className="mini-mode-toggle pin-control-btn"
               title="Bar Position"
               onClick={() => {
-                const positions: BarPosition[] = ['bottom', 'left', 'right'];
-                const currentIndex = positions.indexOf(barPosition);
-                const nextIndex = (currentIndex + 1) % positions.length;
-                setBarPosition(positions[nextIndex]);
+                setBarPosition(cycleBarPosition(barPosition));
               }}
               aria-label={`Change bar position (current: ${barPosition})`}
             >
@@ -208,4 +213,3 @@ export default function PromptBar({
     </>
   );
 }
-
