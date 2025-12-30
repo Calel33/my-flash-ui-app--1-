@@ -36,8 +36,10 @@ export function useSessionMutations(options: Options) {
   const applyVariation = useCallback(
     (html: string) => {
       if (focusedArtifactIndex === null) return;
-      setSessions((prev) =>
-        prev.map((sess, i) =>
+      setSessions((prev) => {
+        const session = prev[currentSessionIndex];
+        if (!session || focusedArtifactIndex >= session.artifacts.length) return prev;
+        return prev.map((sess, i) =>
           i === currentSessionIndex
             ? {
                 ...sess,
@@ -46,8 +48,8 @@ export function useSessionMutations(options: Options) {
                 ),
               }
             : sess,
-        ),
-      );
+        );
+      });
       closeDrawer();
     },
     [closeDrawer, currentSessionIndex, focusedArtifactIndex, setSessions],

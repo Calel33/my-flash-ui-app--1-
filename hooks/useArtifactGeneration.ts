@@ -188,27 +188,7 @@ export function useArtifactGeneration(options: {
           }
         };
 
-        await Promise.all(
-          placeholderArtifacts.map(async (art, i) => {
-            try {
-              await generateArtifact(art, generatedStyles[i]);
-            } catch (error) {
-              const errorMessage = error instanceof Error ? error.message : 'Failed to generate artifact';
-              setSessions((prev) =>
-                prev.map((sess) =>
-                  sess.id === sessionId
-                    ? {
-                        ...sess,
-                        artifacts: sess.artifacts.map((a) =>
-                          a.id === art.id ? { ...a, status: 'error', errorMessage, html: '' } : a,
-                        ),
-                      }
-                    : sess,
-                ),
-              );
-            }
-          }),
-        );
+        await Promise.all(placeholderArtifacts.map((art, i) => generateArtifact(art, generatedStyles[i])));
       } finally {
         setIsLoading(false);
       }
