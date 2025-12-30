@@ -36,3 +36,18 @@ export interface Session {
 
 export interface ComponentVariation { name: string; html: string; }
 export interface LayoutOption { name: string; css: string; previewHtml: string; }
+
+export interface ComparisonSlot {
+  id: string;
+  provider: 'gemini' | 'glm' | 'openrouter';
+  modelId: string;
+}
+
+export interface ComparisonResult {
+  slotId: string;
+  status: 'idle' | 'loading' | 'success' | 'error';
+  content: string;
+  error?: string;
+  provider: 'gemini' | 'glm' | 'openrouter';
+  modelId: string;
+}

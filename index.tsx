@@ -9,7 +9,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 
-import { Session } from './types';
+import { ComparisonSlot, Session } from './types';
 
 import { usePreferences } from './hooks/usePreferences';
 import { useLibrary } from './hooks/useLibrary';
@@ -40,6 +40,8 @@ export function App() {
     const [currentSessionIndex, setCurrentSessionIndex] = useState<number>(-1);
     const [focusedArtifactIndex, setFocusedArtifactIndex] = useState<number | null>(null);
     const prevSessionsLength = useRef<number>(0);
+    const [isComparisonMode, setIsComparisonMode] = useState<boolean>(false);
+    const [comparisonSlots, setComparisonSlots] = useState<ComparisonSlot[]>([]);
     const {
         activeSystem,
         clearActiveSystem,
