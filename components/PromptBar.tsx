@@ -6,6 +6,7 @@ import type { BarPosition } from '../hooks/usePreferences';
 
 import PromptPopup from './PromptPopup';
 import {
+  ComparisonIcon,
   EditIcon,
   EyeIcon,
   EyeOffIcon,
@@ -41,6 +42,7 @@ export default function PromptBar({
   inputValue,
   isPromptPopupOpen,
   provider,
+  isComparisonMode,
   clearActiveSystem,
   handleSendMessage,
   setBarPosition,
@@ -52,6 +54,7 @@ export default function PromptBar({
   setInputValue,
   setIsPromptPopupOpen,
   setProvider,
+  setIsComparisonMode,
   handleShowImport,
   handleShowLibrary,
 }: {
@@ -67,6 +70,7 @@ export default function PromptBar({
   inputValue: string;
   isPromptPopupOpen: boolean;
   provider: ProviderId;
+  isComparisonMode?: boolean;
   clearActiveSystem: () => void;
   handleSendMessage: () => void;
   setBarPosition: Dispatch<SetStateAction<BarPosition>>;
@@ -78,6 +82,7 @@ export default function PromptBar({
   setInputValue: Dispatch<SetStateAction<string>>;
   setIsPromptPopupOpen: Dispatch<SetStateAction<boolean>>;
   setProvider: Dispatch<SetStateAction<ProviderId>>;
+  setIsComparisonMode?: Dispatch<SetStateAction<boolean>>;
   handleShowImport: () => void;
   handleShowLibrary: () => void;
 }) {
@@ -124,6 +129,15 @@ export default function PromptBar({
             <button className="mini-mode-toggle" title="Import HTML Design" onClick={handleShowImport}>
               <UploadIcon />
             </button>
+            {setIsComparisonMode && (
+              <button
+                className={`mini-mode-toggle ${isComparisonMode ? 'active' : ''}`}
+                title="Comparison Mode"
+                onClick={() => setIsComparisonMode(!isComparisonMode)}
+              >
+                <ComparisonIcon />
+              </button>
+            )}
             <div className="provider-select-control" title="AI Provider">
               <select
                 value={provider}

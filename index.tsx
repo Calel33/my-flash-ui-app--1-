@@ -29,6 +29,7 @@ import GlmLoadingIndicator from './components/GlmLoadingIndicator';
 import SideDrawer from './components/SideDrawer';
 import ElementEditor, { ElementData } from './components/ElementEditor';
 import AppShell from './components/AppShell';
+import ComparisonMode from './components/ComparisonMode';
 import EmptyState from './components/EmptyState';
 import SessionGrid from './components/SessionGrid';
 import ActionBar from './components/ActionBar';
@@ -193,6 +194,7 @@ export function App() {
 
     return (
         <>
+            {isComparisonMode && <ComparisonMode onExit={() => setIsComparisonMode(false)} />}
             <ElementEditor
                 element={editingElement}
                 isOpen={isElementEditorOpen}
@@ -290,6 +292,8 @@ export function App() {
                     setInputValue={setInputValue}
                     isPromptPopupOpen={isPromptPopupOpen}
                     setIsPromptPopupOpen={setIsPromptPopupOpen}
+                    isComparisonMode={isComparisonMode}
+                    setIsComparisonMode={setIsComparisonMode}
                     handleSendMessage={handleSendMessage}
                     handleShowLibrary={handleShowLibrary}
                     handleShowImport={handleShowImport}
