@@ -1,6 +1,6 @@
 # Repository Map
 
-Generated on: 12/29/2025, 4:56:48 PM
+Generated on: 12/29/2025, 8:20:54 PM
 
 ```text
 └── my-flash-ui-app (1)/
@@ -16,6 +16,8 @@ Generated on: 12/29/2025, 4:56:48 PM
     │   ├── openrouter.ts
     │   ├── providers.ts
     │   └── sseParser.ts
+    ├── backup_temp/
+    │   └── index_original_29-12-2025_163940.tsx
     ├── command/
     │   ├── Always.md
     │   ├── APP_ARCHITECTURE.md
@@ -51,13 +53,19 @@ Generated on: 12/29/2025, 4:56:48 PM
     │   ├── task-completion-validator.md
     │   └── ui-mode.md
     ├── components/
+    │   ├── ActionBar.tsx
+    │   ├── AppShell.tsx
     │   ├── ArtifactCard.tsx
     │   ├── DottedGlowBackground.tsx
+    │   ├── DrawerContent.tsx
     │   ├── ElementEditor.tsx
+    │   ├── EmptyState.tsx
     │   ├── GlmLoadingIndicator.tsx
     │   ├── Icons.tsx
     │   ├── ImportDesignPanel.tsx
+    │   ├── PromptBar.tsx
     │   ├── PromptPopup.tsx
+    │   ├── SessionGrid.tsx
     │   └── SideDrawer.tsx
     ├── docs/
     │   ├── core/
@@ -80,10 +88,15 @@ Generated on: 12/29/2025, 4:56:48 PM
     │   ├── sessions/
     │   │   ├── endings/
     │   │   ├── general/
-    │   │   │   └── SESSION_2025-10-08_INITIAL_SETUP.md
+    │   │   │   ├── SESSION_2025-10-08_INITIAL_SETUP.md
+    │   │   │   ├── SESSION_2025-12-29_PHASE1_SAFETY_NET.md
+    │   │   │   └── SESSION_2025-12-29_PHASE2_HOOKS_EXTRACTION.md
     │   │   ├── handoffs/
+    │   │   │   ├── HANDOFF_2025-12-29_PHASE2_HOOKS_PROGRESS.md
+    │   │   │   └── HANDOFF_2025-12-29_PHASE2_KICKOFF.md
     │   │   ├── learnings/
     │   │   └── pauses/
+    │   │       └── PAUSE_2025-12-29_PHASE2_HOOKS_PROGRESS.md
     │   ├── tasks/
     │   │   └── example-task/
     │   │       ├── learnings/
@@ -93,6 +106,20 @@ Generated on: 12/29/2025, 4:56:48 PM
     │   ├── AGENTS.md
     │   ├── README.md
     │   └── SESSION_LOG.md
+    ├── hooks/
+    │   ├── useArtifactGeneration.ts
+    │   ├── useDrawer.ts
+    │   ├── useDrawerActions.ts
+    │   ├── useDrawerOpeners.ts
+    │   ├── useElementEditor.ts
+    │   ├── useIframeSelection.ts
+    │   ├── useLibrary.ts
+    │   ├── usePreferences.ts
+    │   ├── useSessionMutations.ts
+    │   ├── useSessionNavigation.ts
+    │   ├── useSnippetConversion.ts
+    │   ├── useSurpriseMe.ts
+    │   └── useVariations.ts
     ├── prompts/
     │   ├── 001-import-design-html-uploads.md
     │   ├── 002-add-glm-provider-research.md
@@ -183,6 +210,11 @@ Generated on: 12/29/2025, 4:56:48 PM
     │       └── SKILL.md
     ├── system-rules/
     │   └── AGENTS.md
+    ├── tests/
+    │   ├── app.smoke.test.tsx
+    │   ├── element-editor.smoke.test.tsx
+    │   ├── setup.ts
+    │   └── variations-parser.test.ts
     ├── tools/
     │   └── map-generator/
     │       ├── generate.js
