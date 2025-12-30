@@ -57,19 +57,25 @@ export function useSessionMutations(options: Options) {
 
   const handleSaveToLibrary = useCallback(() => {
     const currentSession = sessions[currentSessionIndex];
-    if (currentSession && focusedArtifactIndex !== null) {
-      const artifact = currentSession.artifacts[focusedArtifactIndex];
-      const newItem: LibraryItem = {
-        id: generateId(),
-        name: artifact.styleName || 'Untitled Item',
-        prompt: currentSession.prompt,
-        html: artifact.html,
-        type: artifact.isDesignSystem ? 'design-system' : 'component',
-        timestamp: Date.now(),
-      };
-      prependLibraryItem(newItem);
-      alert(`Saved ${newItem.type === 'design-system' ? 'Design System' : 'Component'} to Library!`);
-    }
+    const artifacts = currentSession?.artifacts;
+    const hasValidArtifact =
+      artifacts &&
+      typeof focusedArtifactIndex === 'number' &&
+      focusedArtifactIndex >= 0 &&
+      focusedArtifactIndex < artifacts.length;
+    if (!currentSession || !hasValidArtifact) return;
+
+    const artifact = artifacts[focusedArtifactIndex];
+    const newItem: LibraryItem = {
+      id: generateId(),
+      name: artifact.styleName || 'Untitled Item',
+      prompt: currentSession.prompt,
+      html: artifact.html,
+      type: artifact.isDesignSystem ? 'design-system' : 'component',
+      timestamp: Date.now(),
+    };
+    prependLibraryItem(newItem);
+    alert(`Saved ${newItem.type === 'design-system' ? 'Design System' : 'Component'} to Library!`);
   }, [currentSessionIndex, focusedArtifactIndex, prependLibraryItem, sessions]);
 
   const handleImportDesign = useCallback(
