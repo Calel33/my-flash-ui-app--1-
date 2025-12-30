@@ -12,7 +12,7 @@ import { dirname, join } from 'path';
 import { GoogleGenAI } from '@google/genai';
 import OpenAI from 'openai';
 import { OpenRouter } from '@openrouter/sdk';
-import type { Message } from '@openrouter/sdk';
+import type { Message } from '@openrouter/sdk/models';
 
 // Load environment variables from server/.env with explicit path
 // Use override: true to ensure .env values take precedence over system env vars
@@ -100,10 +100,6 @@ function getOpenRouterClient(): OpenRouter {
   if (!openrouterClient && OPENROUTER_API_KEY) {
     openrouterClient = new OpenRouter({
       apiKey: OPENROUTER_API_KEY,
-      defaultHeaders: {
-        'HTTP-Referer': HTTP_REFERER,
-        'X-Title': 'Flash UI App',
-      },
     });
   }
   return openrouterClient!;
