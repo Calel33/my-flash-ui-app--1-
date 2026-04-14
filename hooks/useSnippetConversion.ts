@@ -27,7 +27,7 @@ export function useSnippetConversion(options: {
   isReactLoading: boolean;
   setIsReactLoading: Dispatch<SetStateAction<boolean>>;
   setIsLoading: Dispatch<SetStateAction<boolean>>;
-  setSelectorMode: Dispatch<SetStateAction<'edit' | 'extract' | false>>;
+  setSelectorMode: Dispatch<SetStateAction<'extract' | false>>;
 }) {
   const {
     sessions,
