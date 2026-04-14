@@ -27,3 +27,6 @@ dist-ssr
 .env
 .env.local
 command
+.factory
+.brv
+.codenomad

@@ -62,9 +62,9 @@ export const MODELS: ProviderModel[] = [
   },
   // OpenRouter models
   {
-    id: 'anthropic/claude-3.5-sonnet',
-    name: 'Claude 3.5 Sonnet',
-    description: 'Best balance of intelligence and speed',
+    id: 'anthropic/claude-3.7-sonnet',
+    name: 'Claude 3.7 Sonnet',
+    description: 'Strong Anthropic model for design and coding tasks',
     provider: 'openrouter',
     kind: 'design',
   },
@@ -144,6 +144,41 @@ export const MODELS: ProviderModel[] = [
     description: 'Alibaba coding model - free tier',
     provider: 'openrouter',
     kind: 'component',
+  },
+  {
+    id: 'qwen/qwen3.5-9b',
+    name: 'Qwen 3.5 9B',
+    description: 'Compact Qwen model via OpenRouter',
+    provider: 'openrouter',
+    kind: 'component',
+  },
+  {
+    id: 'qwen/qwen3-coder-next',
+    name: 'Qwen3 Coder Next',
+    description: 'Next-generation Qwen coding model',
+    provider: 'openrouter',
+    kind: 'component',
+  },
+  {
+    id: 'qwen/qwen3.5-flash-02-23',
+    name: 'Qwen 3.5 Flash 02-23',
+    description: 'Fast Qwen 3.5 Flash variant',
+    provider: 'openrouter',
+    kind: 'component',
+  },
+  {
+    id: 'qwen/qwen3.6-plus',
+    name: 'Qwen 3.6 Plus',
+    description: 'Higher-capability Qwen model via OpenRouter',
+    provider: 'openrouter',
+    kind: 'design',
+  },
+  {
+    id: 'z-ai/glm-5.1',
+    name: 'GLM 5.1 (OpenRouter)',
+    description: 'Latest Z.AI GLM model via OpenRouter',
+    provider: 'openrouter',
+    kind: 'design',
   },
 ];
 

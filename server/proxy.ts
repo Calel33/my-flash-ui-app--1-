@@ -96,14 +96,24 @@ function getGlmClient(): OpenAI {
 
 let openrouterClient: OpenRouter | null = null;
 
+const DEPRECATED_OPENROUTER_MODELS: Record<string, string> = {
+  'anthropic/claude-3.5-sonnet': 'anthropic/claude-3.7-sonnet',
+};
+
+function normalizeOpenRouterModel(model: string): string {
+  const normalized = DEPRECATED_OPENROUTER_MODELS[model] ?? model;
+  if (normalized !== model) {
+    console.warn(`[OpenRouter] Remapping deprecated model ${model} -> ${normalized}`);
+  }
+  return normalized;
+}
+
 function getOpenRouterClient(): OpenRouter {
   if (!openrouterClient && OPENROUTER_API_KEY) {
     openrouterClient = new OpenRouter({
       apiKey: OPENROUTER_API_KEY,
-      defaultHeaders: {
-        'HTTP-Referer': HTTP_REFERER,
-        'X-Title': 'Flash UI App',
-      },
+      httpReferer: HTTP_REFERER,
+      xTitle: 'Flash UI App',
     });
   }
   return openrouterClient!;
@@ -329,8 +339,9 @@ app.post('/api/openrouter/chat', validateOpenRouterKey, async (req: Request, res
     }
 
     const client = getOpenRouterClient();
+    const resolvedModel = normalizeOpenRouterModel(model);
     const response = await client.chat.send({
-      model,
+      model: resolvedModel,
       messages,
       temperature,
       stream: false,
@@ -358,8 +369,9 @@ app.post('/api/openrouter/stream', validateOpenRouterKey, async (req: Request, r
     setupSSE(res);
 
     const client = getOpenRouterClient();
+    const resolvedModel = normalizeOpenRouterModel(model);
     const stream = await client.chat.send({
-      model,
+      model: resolvedModel,
       messages,
       temperature,
       stream: true,

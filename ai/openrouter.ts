@@ -21,7 +21,7 @@ import type {
 const PROXY_BASE = '/api/openrouter';
 
 // Default OpenRouter model
-const DEFAULT_OPENROUTER_MODEL = 'anthropic/claude-3.5-sonnet';
+const DEFAULT_OPENROUTER_MODEL = 'anthropic/claude-3.7-sonnet';
 
 /**
  * Check if OpenRouter is configured by calling the health endpoint.

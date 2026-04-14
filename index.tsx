@@ -16,7 +16,6 @@ import { useLibrary } from './hooks/useLibrary';
 import { useDrawer } from './hooks/useDrawer';
 import { useVariations } from './hooks/useVariations';
 import { useArtifactGeneration } from './hooks/useArtifactGeneration';
-import { useElementEditor } from './hooks/useElementEditor';
 import { useSnippetConversion } from './hooks/useSnippetConversion';
 import { useIframeSelection } from './hooks/useIframeSelection';
 import { useSessionNavigation } from './hooks/useSessionNavigation';
@@ -27,7 +26,6 @@ import { useSurpriseMe } from './hooks/useSurpriseMe';
 
 import GlmLoadingIndicator from './components/GlmLoadingIndicator';
 import SideDrawer from './components/SideDrawer';
-import ElementEditor, { ElementData } from './components/ElementEditor';
 import AppShell from './components/AppShell';
 import EmptyState from './components/EmptyState';
 import SessionGrid from './components/SessionGrid';
@@ -68,7 +66,7 @@ export function App() {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isReactLoading, setIsReactLoading] = useState<boolean>(false);
 
-    const [selectorMode, setSelectorMode] = useState<'edit' | 'extract' | false>(false);
+    const [selectorMode, setSelectorMode] = useState<'extract' | false>(false);
     const [isDesignSystemMode, setIsDesignSystemMode] = useState<boolean>(false);
     const [snippetTab, setSnippetTab] = useState<'html' | 'react'>('html');
     const [isArtifactFullscreen, setIsArtifactFullscreen] = useState<boolean>(false);
@@ -117,14 +115,8 @@ export function App() {
         setSelectorMode,
     });
 
-    // Element Editor state
-    const [editingElement, setEditingElement] = useState<ElementData | null>(null);
-    const [isElementEditorOpen, setIsElementEditorOpen] = useState(false);
-
     useIframeSelection({
         selectorMode,
-        setEditingElement,
-        setIsElementEditorOpen,
         handleExtractSnippet,
     });
 
@@ -175,32 +167,12 @@ export function App() {
         openDrawer,
     });
 
-    const { applyElementChanges, saveElementEdits } = useElementEditor({
-        editingElement,
-        focusedArtifactIndex,
-        currentSessionIndex,
-        setSessions,
-        setSelectorMode,
-        setIsElementEditorOpen,
-        setEditingElement,
-    });
-
     const { handleSurpriseMe } = useSurpriseMe({ setInputValue, handleSendMessage });
 
     const currentSnippetData = drawerState.mode === 'snippet' && snippetTab === 'react' ? (drawerState.reactData || '') : (drawerState.data || '');
 
     return (
         <>
-            <ElementEditor
-                element={editingElement}
-                isOpen={isElementEditorOpen}
-                onClose={() => {
-                    setIsElementEditorOpen(false);
-                    setEditingElement(null);
-                }}
-                onApplyChanges={applyElementChanges}
-                onSave={saveElementEdits}
-            />
             <SideDrawer isOpen={drawerState.isOpen} onClose={closeDrawer} title={drawerState.title}>
                 <DrawerContent
                     drawerState={drawerState}

@@ -4,7 +4,7 @@ import type { Session } from '../types';
 
 import ArtifactCard from './ArtifactCard';
 
-type SelectorMode = 'edit' | 'extract' | false;
+type SelectorMode = 'extract' | false;
 
 export default function SessionGrid({
   sessions,

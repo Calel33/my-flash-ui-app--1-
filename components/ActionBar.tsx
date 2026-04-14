@@ -14,7 +14,7 @@ import {
   SparklesIcon,
 } from './Icons';
 
-type SelectorMode = 'edit' | 'extract' | false;
+type SelectorMode = 'extract' | false;
 
 export default function ActionBar({
   canGoBack,
@@ -92,12 +92,6 @@ export default function ActionBar({
             </button>
           )}
           <button
-            onClick={() => setSelectorMode(selectorMode === 'edit' ? false : 'edit')}
-            className={selectorMode === 'edit' ? 'active-btn' : ''}
-          >
-            <SelectorIcon /> {selectorMode === 'edit' ? 'Cancel Edit' : 'Edit Element'}
-          </button>
-          <button
             onClick={() => setSelectorMode(selectorMode === 'extract' ? false : 'extract')}
             className={selectorMode === 'extract' ? 'active-btn' : ''}
           >
@@ -121,9 +115,7 @@ export default function ActionBar({
         </div>
         {selectorMode && (
           <div className="selector-tip">
-            {selectorMode === 'edit'
-              ? 'Click any element to edit its styles.'
-              : 'Click any element to extract it as a component.'}
+            Click any element to extract it as a component.
           </div>
         )}
       </div>
